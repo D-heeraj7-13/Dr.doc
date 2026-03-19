@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drdoc"
+version = "0.1.0"
+description = "Dr.doc — automatic documentation generator for Python source files"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["documentation", "docstring", "generator", "markdown"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+]
+
+[project.scripts]
+drdoc = "drdoc.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["drdoc*"]
