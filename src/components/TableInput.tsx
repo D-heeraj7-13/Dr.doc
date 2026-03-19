@@ -16,9 +16,11 @@ interface TableInputProps {
 
 export default function TableInput({ section, setSection }: TableInputProps) {
   const addRow = () => {
+    const newRow: Record<string, string> = {};
+    section.columns.forEach(col => { if(col !== "Sr No") newRow[col] = ""; });
     setSection({
       ...section,
-      rows: [...section.rows, {}],
+      rows: [...section.rows, newRow],
     });
   };
 
@@ -33,41 +35,89 @@ export default function TableInput({ section, setSection }: TableInputProps) {
     setSection({ ...section, rows: updated });
   };
 
+  const updateHeader = (colIdx: number, newValue: string) => {
+    if (colIdx === 0) return; // Don't edit "Sr No"
+    const oldName = section.columns[colIdx];
+    const newColumns = [...section.columns];
+    newColumns[colIdx] = newValue;
+
+    // Update all rows to use the new key name
+    const newRows = section.rows.map(row => {
+      const newRow = { ...row };
+      newRow[newValue] = row[oldName];
+      delete newRow[oldName];
+      return newRow;
+    });
+
+    setSection({ ...section, columns: newColumns, rows: newRows });
+  };
+
+  const addColumn = () => {
+    const newColName = `Column ${section.columns.length}`;
+    setSection({
+      ...section,
+      columns: [...section.columns, newColName],
+      rows: section.rows.map(row => ({ ...row, [newColName]: "" }))
+    });
+  };
+
   return (
-    <div className="space-y-4 p-4 border rounded-lg bg-white dark:bg-zinc-900 shadow-sm">
-      {section.title && <h3 className="text-lg font-bold">{section.title}</h3>}
-      <div className="overflow-x-auto">
+    <div className="space-y-4 p-6 border-2 border-zinc-200 dark:border-zinc-800 rounded-2xl bg-white dark:bg-zinc-900 shadow-sm transition-all">
+      <div className="flex justify-between items-center px-1">
+        <input 
+          className="text-lg font-black uppercase tracking-tight bg-transparent border-none focus:ring-1 focus:ring-blue-500 rounded outline-none w-1/2"
+          value={section.title || "Data Table"}
+          onChange={(e) => setSection({...section, title: e.target.value})}
+        />
+        <button 
+          onClick={addColumn}
+          className="text-[10px] font-bold bg-zinc-800 text-white px-3 py-1 rounded-full hover:bg-black transition-colors uppercase tracking-widest"
+        >
+          + Add Column
+        </button>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
         <table className="w-full text-sm text-left border-collapse">
           <thead>
-            <tr className="bg-zinc-100 dark:bg-zinc-800">
-              {section.columns.map((col) => (
-                <th key={col} className="p-2 border border-zinc-300 dark:border-zinc-700 font-semibold uppercase tracking-wider text-xs">
-                  {col}
+            <tr className="bg-zinc-100 dark:bg-zinc-800/50">
+              {section.columns.map((col, idx) => (
+                <th key={idx} className="p-3 border-b border-zinc-200 dark:border-zinc-700">
+                  {idx === 0 ? (
+                    <span className="font-black text-[10px] uppercase text-zinc-400">{col}</span>
+                  ) : (
+                    <input 
+                      className="font-black text-[10px] uppercase tracking-widest bg-transparent border-none focus:ring-1 focus:ring-blue-500 rounded outline-none w-full"
+                      value={col}
+                      onChange={(e) => updateHeader(idx, e.target.value)}
+                    />
+                  )}
                 </th>
               ))}
-              <th className="p-2 border border-zinc-300 dark:border-zinc-700">Action</th>
+              <th className="p-3 border-b border-zinc-200 dark:border-zinc-700 w-10"></th>
             </tr>
           </thead>
           <tbody>
             {section.rows.map((row, i) => (
-              <tr key={i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                <td className="p-2 border border-zinc-300 dark:border-zinc-700 text-center font-medium bg-zinc-50 dark:bg-zinc-800/30">
+              <tr key={i} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors group">
+                <td className="p-3 border-b border-zinc-100 dark:border-zinc-800 text-center font-bold text-zinc-400 bg-zinc-50/50 dark:bg-zinc-800/10 w-12">
                   {i + 1}
                 </td>
                 {section.columns.slice(1).map((col) => (
-                  <td key={col} className="p-2 border border-zinc-300 dark:border-zinc-700">
+                  <td key={col} className="p-3 border-b border-zinc-100 dark:border-zinc-800">
                     <input
-                      className="w-full p-1 bg-transparent border-none focus:ring-1 focus:ring-blue-500 rounded outline-none"
-                      placeholder={`Enter ${col.toLowerCase()}...`}
+                      className="w-full p-1 bg-transparent border-none focus:ring-1 focus:ring-blue-500 rounded outline-none text-zinc-700 dark:text-zinc-300"
+                      placeholder="..."
                       value={row[col] || ""}
                       onChange={(e) => updateCell(i, col, e.target.value)}
                     />
                   </td>
                 ))}
-                <td className="p-2 border border-zinc-300 dark:border-zinc-700 text-center">
+                <td className="p-3 border-b border-zinc-100 dark:border-zinc-800 text-center">
                   <button
                     onClick={() => removeRow(i)}
-                    className="text-red-500 hover:text-red-700 transition-colors px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"
+                    title="Remove Row"
                   >
                     ✕
                   </button>
@@ -77,11 +127,12 @@ export default function TableInput({ section, setSection }: TableInputProps) {
           </tbody>
         </table>
       </div>
+      
       <button
         onClick={addRow}
-        className="w-full py-2 border-2 border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 hover:text-blue-500 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-lg transition-all font-medium"
+        className="w-full py-3 border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/10 rounded-xl transition-all font-bold uppercase text-[10px] tracking-widest"
       >
-        + Add New Row
+        + Insert New Row
       </button>
     </div>
   );

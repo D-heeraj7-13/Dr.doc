@@ -12,6 +12,7 @@ export default function SowPage() {
     date: new Date().toISOString().split("T")[0],
     createdBy: "",
     logo: null,
+    hasBorder: true,
   });
 
   const [sections, setSections] = useState<any[]>([
@@ -111,6 +112,23 @@ export default function SowPage() {
             value={meta.date}
             onChange={(e) => setMeta({ ...meta, date: e.target.value })}
           />
+        </div>
+        <div className="space-y-2">
+          <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Page Border</label>
+          <div className="flex bg-white dark:bg-zinc-950 border rounded-xl p-1 gap-1 h-[50px]">
+            <button
+              onClick={() => setMeta({ ...meta, hasBorder: true })}
+              className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-emerald-600 text-white" : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+            >
+              ON
+            </button>
+            <button
+              onClick={() => setMeta({ ...meta, hasBorder: false })}
+              className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+            >
+              OFF
+            </button>
+          </div>
         </div>
       </section>
 

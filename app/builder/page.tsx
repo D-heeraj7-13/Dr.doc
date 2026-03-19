@@ -12,6 +12,7 @@ export default function BuilderPage() {
     date: new Date().toISOString().split("T")[0],
     createdBy: "",
     logo: null,
+    hasBorder: true,
   });
 
   const [sections, setSections] = useState<any[]>([]);
@@ -119,6 +120,23 @@ export default function BuilderPage() {
               value={meta.date}
               onChange={(e) => setMeta({ ...meta, date: e.target.value })}
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-indigo-500 uppercase">Page Border</label>
+            <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setMeta({ ...meta, hasBorder: true })}
+                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-indigo-600 text-white" : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+              >
+                ON
+              </button>
+              <button
+                onClick={() => setMeta({ ...meta, hasBorder: false })}
+                className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+              >
+                OFF
+              </button>
+            </div>
           </div>
         </div>
       </section>

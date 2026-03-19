@@ -9,45 +9,76 @@ import {
   ImageRun,
   Footer,
   PageNumber,
+  AlignmentType,
+  HeightRule,
+  BorderStyle,
+  PageBorderDisplay,
+  PageBorderOffsetFrom,
+  PageBorderZOrder,
 } from "docx";
 
-const safe = (val) => val || "N/A";
+const safe = (val) => (val === null || val === undefined ? "N/A" : String(val));
 
-/* 🟡 NEW: HEADER RENDER */
+/* 🟡 HEADER RENDER */
 const renderHeader = (meta) => {
+  const children = [];
+
+  // Handle Logo
+  if (meta.logo) {
+    try {
+      children.push(
+        new ImageRun({
+          data: meta.logo,
+          transformation: { width: 120, height: 60 },
+        })
+      );
+    } catch (e) {
+      console.error("Logo render failed", e);
+    }
+  }
+
+  // Title
+  children.push(
+    new TextRun({
+      text: safe(meta.title).toUpperCase(),
+      bold: true,
+      size: 32,
+      color: "2563eb",
+      break: meta.logo ? 1 : 0,
+    })
+  );
+
+  // Customer & Date
+  children.push(
+    new TextRun({
+      text: `CLIENT: ${safe(meta.customer || "INTERNAL")}`,
+      bold: true,
+      size: 20,
+      color: "666666",
+      break: 1,
+    })
+  );
+
+  children.push(
+    new TextRun({
+      text: `DATE: ${safe(meta.date)}`,
+      size: 16,
+      color: "999999",
+      break: 1,
+    })
+  );
+
   return new Paragraph({
     spacing: { after: 400 },
-    children: [
-      meta.logo
-        ? new ImageRun({
-            data: meta.logo,
-            transformation: { width: 120, height: 60 },
-          })
-        : new TextRun(""),
-      new TextRun({
-        text: `\n${safe(meta.title).toUpperCase()}`,
-        bold: true,
-        size: 32,
-        color: "2563eb",
-      }),
-      new TextRun({
-        text: `\nCLIENT: ${safe(meta.customer || "INTERNAL")}`,
-        bold: true,
-        size: 20,
-        color: "666666",
-      }),
-      new TextRun({
-        text: `\nDATE: ${safe(meta.date)}`,
-        size: 16,
-        color: "999999",
-      }),
-      new TextRun("\n"),
-    ],
+    children: children,
   });
 };
 
-/* 🟡 NEW: TABLE RENDER */
+/* 🟡 TABLE RENDER */
 const renderTable = (section) => {
+  const columns = section.columns || [];
+  const rows = section.rows || [];
+
   return new Table({
     width: { size: 100, type: "percentage" },
     borders: {
@@ -59,74 +90,88 @@ const renderTable = (section) => {
       insideVertical: { style: "single", size: 1, color: "000000" },
     },
     rows: [
+      // Header Row
       new TableRow({
         tableHeader: true,
-        children: (section.columns || []).map(
+        children: columns.map(
           (col) =>
             new TableCell({
               shading: { fill: "f2f2f2" },
-              verticalAlign: "center",
               children: [
                 new Paragraph({
-                  alignment: "center",
-                  children: [new TextRun({ text: col, bold: true, size: 20 })],
+                  alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: safe(col), bold: true, size: 20 })],
                 }),
               ],
             })
         ),
       }),
-
-      ...(section.rows || []).map((row, i) =>
-        new TableRow({
-          children: [
-            new TableCell({
-              verticalAlign: "center",
-              children: [new Paragraph({ alignment: "center", text: String(i + 1) })],
-            }),
-            ...(section.columns || []).slice(1).map(
-              (col) =>
-                new TableCell({
-                  children: [new Paragraph({ text: safe(row[col]), size: 18 })],
-                })
-            ),
-          ],
-        })
+      // Data Rows
+      ...rows.map(
+        (row, i) =>
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: [new TextRun({ text: String(i + 1), size: 18 })],
+                  }),
+                ],
+              }),
+              ...columns.slice(1).map(
+                (col) =>
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [new TextRun({ text: safe(row[col]), size: 18 })],
+                      }),
+                    ],
+                  })
+              ),
+            ],
+          })
       ),
     ],
   });
 };
 
-/* 🟡 NEW: SIGNATURE */
+/* 🟡 SIGNATURE RENDER */
 const renderSignature = (section) => {
+  const fields = section.fields || [];
   return new Table({
     width: { size: 100, type: "percentage" },
+    borders: {
+      top: { style: "nil" },
+      bottom: { style: "nil" },
+      left: { style: "nil" },
+      right: { style: "nil" },
+      insideHorizontal: { style: "nil" },
+      insideVertical: { style: "nil" },
+    },
     rows: [
       new TableRow({
-        children: (section.fields || []).map(
+        children: fields.map(
           (f) =>
             new TableCell({
               borders: {
-                top: { style: "nil" },
                 bottom: { style: "single", size: 1, color: "000000" },
-                left: { style: "nil" },
-                right: { style: "nil" },
               },
-              padding: { top: 200, bottom: 200 },
+              padding: { top: 400, bottom: 100, left: 100, right: 100 },
               children: [
                 new Paragraph({
                   children: [
-                    new TextRun({ 
-                      text: safe(f.value), 
-                      bold: true, 
-                      size: 24,
-                      color: "2563eb" 
+                    new TextRun({
+                      text: safe(f.value),
+                      bold: true,
+                      size: 20,
+                      color: "2563eb",
                     }),
-                    new TextRun({ text: "\n", size: 12 }),
                   ],
                 }),
                 new Paragraph({
                   children: [
-                    new TextRun({ text: f.label, size: 14, color: "666666" }),
+                    new TextRun({ text: safe(f.label), size: 14, color: "666666" }),
                   ],
                 }),
               ],
@@ -137,43 +182,48 @@ const renderSignature = (section) => {
   });
 };
 
-/* 🟡 NEW: SECTION ROUTER */
-const renderSection = (section) => {
-  const commonSpacing = { before: 400, after: 200 };
+/* 🟡 TEXT SECTION RENDER (Handles Multiline) */
+const renderTextSection = (section) => {
+  const lines = safe(section.content).split("\n");
+  
+  return [
+    new Paragraph({
+      spacing: { before: 400, after: 200 },
+      children: [
+        new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
+      ],
+    }),
+    ...lines.map(line => new Paragraph({
+      children: [new TextRun({ text: line, size: 20 })],
+      spacing: { after: 100 }
+    }))
+  ];
+};
 
+/* 🟡 SECTION ROUTER */
+const renderSection = (section) => {
   switch (section.type) {
     case "table":
       return [
         new Paragraph({
-          text: section.title || "DATA TABLE",
-          bold: true,
-          size: 24,
-          ...commonSpacing,
+          spacing: { before: 400, after: 200 },
+          children: [
+            new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
+          ],
         }),
         renderTable(section),
       ];
 
     case "text":
-      return [
-        new Paragraph({
-          text: section.title || "SECTION",
-          bold: true,
-          size: 24,
-          ...commonSpacing,
-        }),
-        new Paragraph({
-          text: section.content || "N/A",
-          spacing: { after: 200 },
-        }),
-      ];
+      return renderTextSection(section);
 
     case "signature":
       return [
         new Paragraph({
-          text: section.title || "SIGNATURES",
-          bold: true,
-          size: 24,
-          ...commonSpacing,
+          spacing: { before: 400, after: 200 },
+          children: [
+            new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
+          ],
         }),
         renderSignature(section),
       ];
@@ -185,14 +235,31 @@ const renderSection = (section) => {
 
 /* 🟡 MAIN EXPORT */
 export const generateDoc = async (schema) => {
+  const borderStyle = schema.meta.hasBorder
+    ? {
+        display: PageBorderDisplay.ALL_PAGES,
+        offsetFrom: PageBorderOffsetFrom.PAGE,
+        zOrder: PageBorderZOrder.FRONT,
+        top: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
+        bottom: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
+        left: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
+        right: { style: BorderStyle.SINGLE, size: 12, color: "000000", space: 24 },
+      }
+    : undefined;
+
   const doc = new Document({
     sections: [
       {
+        properties: {
+          page: {
+            borders: borderStyle,
+          },
+        },
         footers: {
           default: new Footer({
             children: [
               new Paragraph({
-                alignment: "right",
+                alignment: AlignmentType.RIGHT,
                 children: [
                   new TextRun({ text: "Page ", size: 18 }),
                   PageNumber.CURRENT,
