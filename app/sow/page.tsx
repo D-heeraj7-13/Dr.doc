@@ -96,7 +96,7 @@ export default function SowPage() {
           </button>
         </header>
 
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-8 p-6 bg-zinc-50/80 dark:bg-zinc-900/80 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner items-end backdrop-blur-sm">
+        {/* <section className="grid grid-cols-1 md:grid-cols-3 gap-8 p-6 bg-zinc-50/80 dark:bg-zinc-900/80 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner items-end backdrop-blur-sm">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Logo</label>
             <input
@@ -141,7 +141,7 @@ export default function SowPage() {
               </button>
             </div>
           </div>
-        </section>
+        </section> */}
 
         <div className="bg-white/50 dark:bg-zinc-950/50 rounded-3xl p-4 backdrop-blur-sm">
            <DynamicForm sections={sections} setSections={setSections} />

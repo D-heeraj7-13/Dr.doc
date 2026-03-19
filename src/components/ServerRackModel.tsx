@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, Environment, Float, ContactShadows } from "@react-three/drei";
+import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -10,29 +11,37 @@ gsap.registerPlugin(ScrollTrigger);
 
 function ServerRack() {
   const { scene } = useGLTF("/server_rack.glb");
-  const rackRef = useRef<any>();
+  const rackRef = useRef<THREE.Group>(null!);
+
+  // Mouse follow logic
+  useFrame((state) => {
+    if (rackRef.current) {
+      const targetX = state.mouse.y * 0.3; // subtle follow
+      const targetY = state.mouse.x * 0.3;
+      
+      rackRef.current.rotation.x = THREE.MathUtils.lerp(
+        rackRef.current.rotation.x,
+        targetX,
+        0.05
+      );
+      rackRef.current.rotation.y = THREE.MathUtils.lerp(
+        rackRef.current.rotation.y,
+        targetY,
+        0.05
+      );
+    }
+  });
 
   useEffect(() => {
     let ctx = gsap.context(() => {
       if (rackRef.current) {
         // Initial position: Off-screen to the right
         gsap.set(rackRef.current.position, { x: 5, y: -2, z: 0 });
-        gsap.set(rackRef.current.rotation, { y: -Math.PI / 4 });
 
-        // Scroll animation: Move to center-left and rotate
+        // Scroll animation: Move position from right to left
         gsap.to(rackRef.current.position, {
           x: -3,
           y: 0,
-          scrollTrigger: {
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1.5,
-          },
-        });
-
-        gsap.to(rackRef.current.rotation, {
-          y: Math.PI / 4,
           scrollTrigger: {
             trigger: "body",
             start: "top top",
