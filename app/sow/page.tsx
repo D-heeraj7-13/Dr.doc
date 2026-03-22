@@ -20,16 +20,21 @@ export default function SowPage() {
 
   const [sections, setSections] = useState<any[]>([
     {
+      id: "exec-summary",
       type: "text",
       title: "Executive Summary",
       content: "Brief overview of project goals...",
+      layout: { x: 0, y: 0, w: 12, h: 6 }
     },
     {
+      id: "objectives",
       type: "text",
       title: "Project Objectives",
       content: `1. Objective One\n2. Objective Two`,
+      layout: { x: 0, y: 6, w: 12, h: 6 }
     },
     {
+      id: "deliverables",
       type: "table",
       title: "Deliverables Schedule",
       columns: ["Sr No", "Milestone", "Deadline", "Responsibility"],
@@ -37,8 +42,10 @@ export default function SowPage() {
         { Milestone: "Initial Setup", Deadline: "Week 1", Responsibility: "Lead Engineer" },
         { Milestone: "Testing Phase", Deadline: "Week 3", Responsibility: "QA Team" }
       ],
+      layout: { x: 0, y: 12, w: 12, h: 10 }
     },
     {
+      id: "acceptance",
       type: "signature",
       title: "Formal Acceptance",
       fields: [
@@ -47,6 +54,7 @@ export default function SowPage() {
         { label: "Signature", value: "" },
         { label: "Date", value: new Date().toLocaleDateString() },
       ],
+      layout: { x: 0, y: 22, w: 12, h: 6 }
     },
   ]);
 
@@ -143,8 +151,23 @@ export default function SowPage() {
           </div>
         </section> */}
 
-        <div className="bg-white/50 dark:bg-zinc-950/50 rounded-3xl p-4 backdrop-blur-sm">
-           <DynamicForm sections={sections} setSections={setSections} />
+        <div className="bg-white/50 dark:bg-zinc-950/50 rounded-3xl p-4 backdrop-blur-sm space-y-4">
+           {sections.map((section, index) => (
+             <DynamicForm 
+               key={section.id || index}
+               section={section} 
+               index={index} 
+               updateSection={(idx, updated) => {
+                 const next = [...sections];
+                 next[idx] = updated;
+                 setSections(next);
+               }}
+               removeSection={(idx) => {
+                 setSections(sections.filter((_, i) => i !== idx));
+               }}
+               handleImageUpload={() => {}} // Not used in SOW but required by prop types
+             />
+           ))}
         </div>
       </div>
     </div>

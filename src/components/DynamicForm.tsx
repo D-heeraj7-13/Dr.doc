@@ -24,6 +24,7 @@ interface DynamicFormProps {
 }
 
 export default function DynamicForm({ section, index, updateSection, removeSection, handleImageUpload }: DynamicFormProps) {
+  if (!section) return null;
   return (
     <div className="relative group/section h-full overflow-hidden bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm">
       <div className="absolute top-2 right-2 flex gap-2 z-30 opacity-0 group-hover/section:opacity-100 transition-opacity">

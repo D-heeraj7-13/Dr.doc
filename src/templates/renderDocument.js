@@ -45,19 +45,18 @@ const renderComponent = (section) => {
 
   if (section.type === "text") {
     const lines = safe(section.content).split("\n");
-    return [
-      titlePara,
-      ...lines.map(line => new Paragraph({ children: [new TextRun({ text: line, size: 12, color: "374151" })], spacing: { after: 50 } }))
-    ];
+    const contentParas = lines.map(line => new Paragraph({ 
+      children: [new TextRun({ text: line || " ", size: 12, color: "374151" })], 
+      spacing: { after: 50 } 
+    }));
+    return [titlePara, ...contentParas];
   }
 
   if (section.type === "image" && section.image) {
     try {
-      // Map grid width/height to document pixels (approx)
-      // w: 12 is full page (~600px)
-      // h: 1 is ~30px
-      const imgW = (section.layout.w / 12) * 550;
-      const imgH = section.layout.h * 25;
+      // Ensure dimensions are integers
+      const imgW = Math.round((section.layout.w / 12) * 500);
+      const imgH = Math.round(section.layout.h * 25);
       
       return [
         titlePara,
@@ -72,30 +71,39 @@ const renderComponent = (section) => {
         })
       ];
     } catch (e) {
-      console.error("Image render failed", e);
-      return [titlePara, new Paragraph("Image Load Error")];
+      return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image Error", size: 10, color: "ef4444" })] })];
     }
   }
 
   if (section.type === "table") {
-    const cols = section.columns || [];
+    const cols = section.columns || ["No Data"];
     const rows = section.rows || [];
     return [
       titlePara,
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: { top: { style: BorderStyle.SINGLE }, bottom: { style: BorderStyle.SINGLE }, left: { style: BorderStyle.SINGLE }, right: { style: BorderStyle.SINGLE }, insideHorizontal: { style: BorderStyle.SINGLE }, insideVertical: { style: BorderStyle.SINGLE } },
+        borders: { 
+          top: { style: BorderStyle.SINGLE, size: 1 }, 
+          bottom: { style: BorderStyle.SINGLE, size: 1 }, 
+          left: { style: BorderStyle.SINGLE, size: 1 }, 
+          right: { style: BorderStyle.SINGLE, size: 1 }, 
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 1 }, 
+          insideVertical: { style: BorderStyle.SINGLE, size: 1 } 
+        },
         rows: [
           new TableRow({
             tableHeader: true,
-            children: cols.map(c => new TableCell({ shading: { fill: "f9fafb" }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: safe(c), bold: true, size: 11 })] })] }))
+            children: cols.map(c => new TableCell({ 
+              shading: { fill: "f9fafb" }, 
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: safe(c), bold: true, size: 11 })] })] 
+            }))
           }),
-          ...rows.map((r, i) => new TableRow({
+          ...(rows.length > 0 ? rows.map((r, i) => new TableRow({
             children: [
               new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(i + 1), size: 11 })] })] }),
               ...cols.slice(1).map(c => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: safe(r[c]), size: 11 })] })] }))
             ]
-          }))
+          })) : [new TableRow({ children: [new TableCell({ columnSpan: cols.length, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "No data rows", size: 10 })] })] })] })])
         ]
       })
     ];
@@ -107,23 +115,30 @@ const renderComponent = (section) => {
       titlePara,
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL }, insideHorizontal: { style: BorderStyle.NIL }, insideVertical: { style: BorderStyle.NIL } },
+        borders: { 
+          top: { style: BorderStyle.NIL }, 
+          bottom: { style: BorderStyle.NIL }, 
+          left: { style: BorderStyle.NIL }, 
+          right: { style: BorderStyle.NIL }, 
+          insideHorizontal: { style: BorderStyle.NIL }, 
+          insideVertical: { style: BorderStyle.NIL } 
+        },
         rows: [
           new TableRow({
-            children: fields.map(f => new TableCell({
+            children: fields.length > 0 ? fields.map(f => new TableCell({
               borders: { bottom: { style: BorderStyle.SINGLE, size: 1 } },
               padding: { top: 100, bottom: 50 },
               children: [
-                new Paragraph({ children: [new TextRun({ text: safe(f.value), bold: true, size: 12, color: "4f46e5" })] }),
-                new Paragraph({ children: [new TextRun({ text: safe(f.label).toUpperCase(), size: 9, color: "6b7280" })] })
+                new Paragraph({ children: [new TextRun({ text: safe(f.value) || " ", bold: true, size: 12, color: "4f46e5" })] }),
+                new Paragraph({ children: [new TextRun({ text: safe(f.label).toUpperCase() || "SIGNATORY", size: 9, color: "6b7280" })] })
               ]
-            }))
+            })) : [new TableCell({ children: [new Paragraph(" ")] })]
           })
         ]
       })
     ];
   }
-  return [titlePara];
+  return [titlePara, new Paragraph(" ")];
 };
 
 /* 🟡 MAIN RENDER */
@@ -154,34 +169,54 @@ export const generateDoc = async (schema) => {
     let curX = 0;
 
     rowItems.forEach(item => {
-      if (item.layout.x > curX) {
+      const layout = item.layout || { x: 0, y: 0, w: 12, h: 6 };
+      
+      if (layout.x > curX) {
         cells.push(new TableCell({
-          width: { size: ((item.layout.x - curX) / 12) * 100, type: WidthType.PERCENTAGE },
-          children: [],
+          width: { size: Math.round(((layout.x - curX) / 12) * 100), type: WidthType.PERCENTAGE },
+          children: [new Paragraph("")],
           borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } }
         }));
       }
+
       cells.push(new TableCell({
-        width: { size: (item.layout.w / 12) * 100, type: WidthType.PERCENTAGE },
-        borders: { top: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, left: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, right: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" } },
+        width: { size: Math.round((layout.w / 12) * 100), type: WidthType.PERCENTAGE },
+        borders: { 
+          top: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
+          bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
+          left: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
+          right: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" } 
+        },
         padding: { top: 150, bottom: 150, left: 150, right: 150 },
         children: renderComponent(item)
       }));
-      curX = item.layout.x + item.layout.w;
+      curX = layout.x + layout.w;
     });
 
     if (curX < 12) {
       cells.push(new TableCell({
-        width: { size: ((12 - curX) / 12) * 100, type: WidthType.PERCENTAGE },
-        children: [],
+        width: { size: Math.round(((12 - curX) / 12) * 100), type: WidthType.PERCENTAGE },
+        children: [new Paragraph("")],
         borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL } }
       }));
     }
 
+    const rowHeight = rowItems.reduce((acc, item) => Math.max(acc, item.layout?.h || 6), 0);
+
     children.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { top: { style: BorderStyle.NIL }, bottom: { style: BorderStyle.NIL }, left: { style: BorderStyle.NIL }, right: { style: BorderStyle.NIL }, insideVertical: { style: BorderStyle.NIL }, insideHorizontal: { style: BorderStyle.NIL } },
-      rows: [new TableRow({ children: cells })]
+      borders: { 
+        top: { style: BorderStyle.NIL }, 
+        bottom: { style: BorderStyle.NIL }, 
+        left: { style: BorderStyle.NIL }, 
+        right: { style: BorderStyle.NIL }, 
+        insideVertical: { style: BorderStyle.NIL }, 
+        insideHorizontal: { style: BorderStyle.NIL } 
+      },
+      rows: [new TableRow({ 
+        children: cells,
+        height: { value: rowHeight * 400, rule: "atLeast" }
+      })]
     }));
     children.push(new Paragraph({ spacing: { after: 150 } }));
   });
@@ -194,10 +229,10 @@ export const generateDoc = async (schema) => {
           display: PageBorderDisplay.ALL_PAGES,
           zOrder: PageBorderZOrder.FRONT,
           offsetFrom: PageBorderOffsetFrom.PAGE,
-          top: { style: BorderStyle.SINGLE, size: 24 },
-          bottom: { style: BorderStyle.SINGLE, size: 24 },
-          left: { style: BorderStyle.SINGLE, size: 24 },
-          right: { style: BorderStyle.SINGLE, size: 24 },
+          top: { style: BorderStyle.SINGLE, size: 24, color: "000000" },
+          bottom: { style: BorderStyle.SINGLE, size: 24, color: "000000" },
+          left: { style: BorderStyle.SINGLE, size: 24, color: "000000" },
+          right: { style: BorderStyle.SINGLE, size: 24, color: "000000" },
         } : undefined,
       },
       footers: {

@@ -119,10 +119,10 @@ export default function BuilderPage() {
         </header>
 
         <section className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end backdrop-blur-sm">
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <label className="text-[10px] font-bold text-indigo-500 uppercase">Logo</label>
             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e)} className="w-full text-xs text-zinc-500 file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer" />
-          </div>
+          </div> */}
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-indigo-500 uppercase">Title</label>
             <input className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold" value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} />

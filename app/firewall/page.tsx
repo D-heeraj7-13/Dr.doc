@@ -17,6 +17,7 @@ export default function FirewallPage() {
 
   const [sections, setSections] = useState<any[]>([
     {
+      id: "firewall-scope",
       type: "table",
       title: "Scope of Work & Technical Details",
       columns: ["Sr No", "Description", "Technical Specification", "Comments"],
@@ -24,8 +25,10 @@ export default function FirewallPage() {
         { Description: "Internal Firewall Policy", "Technical Specification": "Layer 7 inspection enabled", Comments: "" },
         { Description: "DMZ Access Rules", "Technical Specification": "Strict outbound only", Comments: "" }
       ],
+      layout: { x: 0, y: 0, w: 12, h: 10 }
     },
     {
+      id: "firewall-approval",
       type: "signature",
       title: "Approval Signatures",
       fields: [
@@ -34,6 +37,7 @@ export default function FirewallPage() {
         { label: "Signature", value: "" },
         { label: "Date", value: new Date().toLocaleDateString() },
       ],
+      layout: { x: 0, y: 10, w: 12, h: 6 }
     },
   ]);
 
@@ -131,7 +135,24 @@ export default function FirewallPage() {
         </div>
       </section>
 
-      <DynamicForm sections={sections} setSections={setSections} />
+      <div className="space-y-4">
+        {sections.map((section, index) => (
+          <DynamicForm 
+            key={section.id || index}
+            section={section} 
+            index={index} 
+            updateSection={(idx, updated) => {
+              const next = [...sections];
+              next[idx] = updated;
+              setSections(next);
+            }}
+            removeSection={(idx) => {
+              setSections(sections.filter((_, i) => i !== idx));
+            }}
+            handleImageUpload={() => {}} // Not used in Firewall but required by prop types
+          />
+        ))}
+      </div>
     </div>
   );
 }
