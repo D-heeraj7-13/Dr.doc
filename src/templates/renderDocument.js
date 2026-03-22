@@ -10,11 +10,12 @@ import {
   Footer,
   PageNumber,
   AlignmentType,
-  HeightRule,
   BorderStyle,
   PageBorderDisplay,
   PageBorderOffsetFrom,
   PageBorderZOrder,
+  WidthType,
+  VerticalAlign,
 } from "docx";
 
 const safe = (val) => (val === null || val === undefined ? "N/A" : String(val));
@@ -23,13 +24,12 @@ const safe = (val) => (val === null || val === undefined ? "N/A" : String(val));
 const renderHeader = (meta) => {
   const children = [];
 
-  // Handle Logo
   if (meta.logo) {
     try {
       children.push(
         new ImageRun({
           data: meta.logo,
-          transformation: { width: 120, height: 60 },
+          transformation: { width: 100, height: 50 },
         })
       );
     } catch (e) {
@@ -37,24 +37,22 @@ const renderHeader = (meta) => {
     }
   }
 
-  // Title
   children.push(
     new TextRun({
       text: safe(meta.title).toUpperCase(),
       bold: true,
-      size: 32,
-      color: "2563eb",
+      size: 28,
+      color: "4f46e5", // indigo-600
       break: meta.logo ? 1 : 0,
     })
   );
 
-  // Customer & Date
   children.push(
     new TextRun({
       text: `CLIENT: ${safe(meta.customer || "INTERNAL")}`,
       bold: true,
-      size: 20,
-      color: "666666",
+      size: 18,
+      color: "4b5563", // zinc-600
       break: 1,
     })
   );
@@ -62,14 +60,14 @@ const renderHeader = (meta) => {
   children.push(
     new TextRun({
       text: `DATE: ${safe(meta.date)}`,
-      size: 16,
-      color: "999999",
+      size: 14,
+      color: "9ca3af", // zinc-400
       break: 1,
     })
   );
 
   return new Paragraph({
-    spacing: { after: 400 },
+    spacing: { after: 300 },
     children: children,
   });
 };
@@ -80,51 +78,51 @@ const renderTable = (section) => {
   const rows = section.rows || [];
 
   return new Table({
-    width: { size: 100, type: "percentage" },
+    width: { size: 100, type: WidthType.PERCENTAGE },
     borders: {
-      top: { style: "single", size: 1, color: "000000" },
-      bottom: { style: "single", size: 1, color: "000000" },
-      left: { style: "single", size: 1, color: "000000" },
-      right: { style: "single", size: 1, color: "000000" },
-      insideHorizontal: { style: "single", size: 1, color: "000000" },
-      insideVertical: { style: "single", size: 1, color: "000000" },
+      top: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "e5e7eb" },
     },
     rows: [
-      // Header Row
       new TableRow({
         tableHeader: true,
         children: columns.map(
           (col) =>
             new TableCell({
-              shading: { fill: "f2f2f2" },
+              shading: { fill: "f9fafb" },
               children: [
                 new Paragraph({
                   alignment: AlignmentType.CENTER,
-                  children: [new TextRun({ text: safe(col), bold: true, size: 20 })],
+                  children: [new TextRun({ text: safe(col).toUpperCase(), bold: true, size: 14, color: "374151" })],
                 }),
               ],
             })
         ),
       }),
-      // Data Rows
       ...rows.map(
         (row, i) =>
           new TableRow({
             children: [
               new TableCell({
+                verticalAlign: VerticalAlign.CENTER,
                 children: [
                   new Paragraph({
                     alignment: AlignmentType.CENTER,
-                    children: [new TextRun({ text: String(i + 1), size: 18 })],
+                    children: [new TextRun({ text: String(i + 1), size: 14, color: "6b7280" })],
                   }),
                 ],
               }),
               ...columns.slice(1).map(
                 (col) =>
                   new TableCell({
+                    verticalAlign: VerticalAlign.CENTER,
                     children: [
                       new Paragraph({
-                        children: [new TextRun({ text: safe(row[col]), size: 18 })],
+                        children: [new TextRun({ text: safe(row[col]), size: 14, color: "111827" })],
                       }),
                     ],
                   })
@@ -139,102 +137,218 @@ const renderTable = (section) => {
 /* 🟡 SIGNATURE RENDER */
 const renderSignature = (section) => {
   const fields = section.fields || [];
-  return new Table({
-    width: { size: 100, type: "percentage" },
-    borders: {
-      top: { style: "nil" },
-      bottom: { style: "nil" },
-      left: { style: "nil" },
-      right: { style: "nil" },
-      insideHorizontal: { style: "nil" },
-      insideVertical: { style: "nil" },
-    },
-    rows: [
-      new TableRow({
-        children: fields.map(
-          (f) =>
-            new TableCell({
-              borders: {
-                bottom: { style: "single", size: 1, color: "000000" },
-              },
-              padding: { top: 400, bottom: 100, left: 100, right: 100 },
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: safe(f.value),
-                      bold: true,
-                      size: 20,
-                      color: "2563eb",
-                    }),
-                  ],
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: safe(f.label), size: 14, color: "666666" }),
-                  ],
-                }),
-              ],
-            })
-        ),
-      }),
-    ],
-  });
+  return [
+    new Paragraph({
+      spacing: { before: 100, after: 100 },
+      children: [
+        new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 16, color: "111827" }),
+      ],
+    }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NIL },
+        bottom: { style: BorderStyle.NIL },
+        left: { style: BorderStyle.NIL },
+        right: { style: BorderStyle.NIL },
+        insideHorizontal: { style: BorderStyle.NIL },
+        insideVertical: { style: BorderStyle.NIL },
+      },
+      rows: [
+        new TableRow({
+          children: fields.map(
+            (f) =>
+              new TableCell({
+                borders: {
+                  bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                },
+                padding: { top: 200, bottom: 50, left: 50, right: 50 },
+                children: [
+                  new Paragraph({
+                    children: [
+                      new TextRun({
+                        text: safe(f.value),
+                        bold: true,
+                        size: 14,
+                        color: "4f46e5",
+                      }),
+                    ],
+                  }),
+                  new Paragraph({
+                    children: [
+                      new TextRun({ text: safe(f.label).toUpperCase(), size: 10, color: "6b7280" }),
+                    ],
+                  }),
+                ],
+              })
+          ),
+        }),
+      ],
+    })
+  ];
 };
 
-/* 🟡 TEXT SECTION RENDER (Handles Multiline) */
+/* 🟡 TEXT SECTION RENDER */
 const renderTextSection = (section) => {
   const lines = safe(section.content).split("\n");
   
   return [
     new Paragraph({
-      spacing: { before: 400, after: 200 },
+      spacing: { before: 100, after: 100 },
       children: [
-        new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
+        new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 16, color: "111827" }),
       ],
     }),
     ...lines.map(line => new Paragraph({
-      children: [new TextRun({ text: line, size: 20 })],
-      spacing: { after: 100 }
+      children: [new TextRun({ text: line, size: 14, color: "374151" })],
+      spacing: { after: 50 }
     }))
   ];
 };
 
-/* 🟡 SECTION ROUTER */
-const renderSection = (section) => {
+/* 🟡 MAIN COMPONENT ROUTER */
+const renderComponent = (section) => {
+  let content = [];
   switch (section.type) {
     case "table":
-      return [
+      content = [
         new Paragraph({
-          spacing: { before: 400, after: 200 },
+          spacing: { before: 100, after: 100 },
           children: [
-            new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
+            new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 16, color: "111827" }),
           ],
         }),
         renderTable(section),
       ];
-
+      break;
     case "text":
-      return renderTextSection(section);
-
+      content = renderTextSection(section);
+      break;
     case "signature":
-      return [
-        new Paragraph({
-          spacing: { before: 400, after: 200 },
-          children: [
-            new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 24 }),
-          ],
-        }),
-        renderSignature(section),
-      ];
-
+      content = renderSignature(section);
+      break;
     default:
-      return [new Paragraph("")];
+      content = [new Paragraph("")];
   }
+
+  // Wrap in a table cell to provide the component border seen in preview
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" },
+      bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" },
+      left: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" },
+      right: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            padding: { top: 200, bottom: 200, left: 200, right: 200 },
+            shading: { fill: "ffffff" },
+            children: content,
+          }),
+        ],
+      }),
+    ],
+  });
+};
+
+/* 🟡 GRID LAYOUT RENDERER */
+const renderGridLayout = (sections) => {
+  const sortedSections = [...sections].sort((a, b) => {
+    if (a.layout.y !== b.layout.y) return a.layout.y - b.layout.y;
+    return a.layout.x - b.layout.x;
+  });
+
+  const rows = [];
+  let currentRow = [];
+  let lastY = -1;
+
+  sortedSections.forEach((s) => {
+    if (currentRow.length === 0 || Math.abs(s.layout.y - lastY) < 1) {
+      currentRow.push(s);
+      lastY = s.layout.y;
+    } else {
+      rows.push(currentRow);
+      currentRow = [s];
+      lastY = s.layout.y;
+    }
+  });
+  if (currentRow.length > 0) rows.push(currentRow);
+
+  const children = [];
+
+  rows.forEach((row) => {
+    row.sort((a, b) => a.layout.x - b.layout.x);
+
+    const cells = [];
+    let currentX = 0;
+
+    row.forEach((s) => {
+      if (s.layout.x > currentX) {
+        cells.push(new TableCell({
+          width: { size: ((s.layout.x - currentX) / 12) * 100, type: WidthType.PERCENTAGE },
+          children: [],
+          borders: {
+            top: { style: BorderStyle.NIL },
+            bottom: { style: BorderStyle.NIL },
+            left: { style: BorderStyle.NIL },
+            right: { style: BorderStyle.NIL },
+          }
+        }));
+      }
+
+      cells.push(new TableCell({
+        width: { size: (s.layout.w / 12) * 100, type: WidthType.PERCENTAGE },
+        children: [renderComponent(s)],
+        borders: {
+          top: { style: BorderStyle.NIL },
+          bottom: { style: BorderStyle.NIL },
+          left: { style: BorderStyle.NIL },
+          right: { style: BorderStyle.NIL },
+        },
+      }));
+
+      currentX = s.layout.x + s.layout.w;
+    });
+
+    if (currentX < 12) {
+      cells.push(new TableCell({
+        width: { size: ((12 - currentX) / 12) * 100, type: WidthType.PERCENTAGE },
+        children: [],
+        borders: {
+          top: { style: BorderStyle.NIL },
+          bottom: { style: BorderStyle.NIL },
+          left: { style: BorderStyle.NIL },
+          right: { style: BorderStyle.NIL },
+        }
+      }));
+    }
+
+    children.push(new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NIL },
+        bottom: { style: BorderStyle.NIL },
+        left: { style: BorderStyle.NIL },
+        right: { style: BorderStyle.NIL },
+        insideHorizontal: { style: BorderStyle.NIL },
+        insideVertical: { style: BorderStyle.NIL },
+      },
+      rows: [new TableRow({ children: cells })],
+    }));
+    
+    // Vertical spacing between grid rows
+    children.push(new Paragraph({ spacing: { before: 200 } }));
+  });
+
+  return children;
 };
 
 /* 🟡 MAIN EXPORT */
 export const generateDoc = async (schema) => {
+  // Correct docx v9 structure for page borders
   const borderStyle = schema.meta.hasBorder
     ? {
         display: PageBorderDisplay.ALL_PAGES,
@@ -252,8 +366,14 @@ export const generateDoc = async (schema) => {
       {
         properties: {
           page: {
-            borders: borderStyle,
+            margin: {
+              top: 720,
+              right: 720,
+              bottom: 720,
+              left: 720,
+            },
           },
+          pageBorders: borderStyle,
         },
         footers: {
           default: new Footer({
@@ -272,11 +392,10 @@ export const generateDoc = async (schema) => {
         },
         children: [
           renderHeader(schema.meta),
-          ...schema.sections.flatMap(renderSection),
+          ...renderGridLayout(schema.sections),
         ],
       },
     ],
   });
-
   return await Packer.toBlob(doc);
 };
