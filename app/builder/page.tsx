@@ -91,10 +91,10 @@ export default function BuilderPage() {
   };
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen bg-black">
       <style jsx global>{`
         .react-grid-placeholder {
-          background: rgba(99, 102, 241, 0.1) !important;
+          background: hsla(239, 84%, 67%, 0.10) !important;
           border-radius: 1rem !important;
           opacity: 0.5 !important;
         }
@@ -103,7 +103,7 @@ export default function BuilderPage() {
       <div className="fixed inset-0 bg-white dark:bg-black -z-20" />
       <TabletModel />
 
-      <div className="relative z-10 max-w-7xl mx-auto p-12 space-y-12 border-x border-zinc-100 dark:border-zinc-900 pb-32">
+      <div className="relative z-10 max-w-7xl bg-black mx-auto p-12 space-y-12 border-x border-zinc-100 dark:border-zinc-900 pb-32">
         <header className="flex flex-col md:flex-row justify-between items-center gap-8 border-b border-zinc-200 dark:border-zinc-800 pb-8">
           <div className="text-center md:text-left">
             <h1 className="text-5xl font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">
@@ -118,7 +118,7 @@ export default function BuilderPage() {
           </button>
         </header>
 
-        <section className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end backdrop-blur-sm">
+        <section style={{display:"flex" , alignItems:"flex-start", justifyContent:"space-between"}} className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end backdrop-blur-sm">
           {/* <div className="space-y-2">
             <label className="text-[10px] font-bold text-indigo-500 uppercase">Logo</label>
             <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e)} className="w-full text-xs text-zinc-500 file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer" />
@@ -138,9 +138,31 @@ export default function BuilderPage() {
               <button onClick={() => setMeta({ ...meta, hasBorder: false })} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400"}`}>OFF</button>
             </div>
           </div>
+          
+          <aside className="space-y-4 sticky top-12 self-start bg-zinc-50/50 dark:bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm">
+            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2 mb-4">Toolbar</h3>
+            <button onClick={() => addSection("text")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
+              <span className="text-2xl">📝</span>
+              <span className="font-bold text-xs uppercase tracking-tight">Text Area</span>
+            </button>
+            <button onClick={() => addSection("table")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
+              <span className="text-2xl">📊</span>
+              <span className="font-bold text-xs uppercase tracking-tight">Data Table</span>
+            </button>
+            <button onClick={() => addSection("image")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
+              <span className="text-2xl">🖼️</span>
+              <span className="font-bold text-xs uppercase tracking-tight">Image Section</span>
+            </button>
+            <button onClick={() => addSection("signature")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
+              <span className="text-2xl">✍️</span>
+              <span className="font-bold text-xs uppercase tracking-tight">Signature</span>
+            </button>
+          </aside>
+
+          
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-12">
+        <div>
           <div className="min-h-[800px] bg-zinc-50/50 dark:bg-zinc-900/20 p-8 rounded-[3rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 backdrop-blur-sm relative">
             {sections.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-20 text-zinc-400">
@@ -177,25 +199,6 @@ export default function BuilderPage() {
             )}
           </div>
 
-          <aside className="space-y-4 sticky top-12 self-start bg-zinc-50/50 dark:bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm">
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2 mb-4">Toolbar</h3>
-            <button onClick={() => addSection("text")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">📝</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Text Area</span>
-            </button>
-            <button onClick={() => addSection("table")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">📊</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Data Table</span>
-            </button>
-            <button onClick={() => addSection("image")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">🖼️</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Image Section</span>
-            </button>
-            <button onClick={() => addSection("signature")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">✍️</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Signature</span>
-            </button>
-          </aside>
         </div>
       </div>
     </div>

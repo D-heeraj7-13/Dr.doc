@@ -22,55 +22,61 @@ const safe = (val) => (val === null || val === undefined ? "" : String(val));
 /* 🟡 HEADER */
 const renderHeader = (meta) => {
   const children = [];
+  
   if (meta.logo) {
     try {
-      children.push(new ImageRun({ data: meta.logo, transformation: { width: 100, height: 50 } }));
+      children.push(new ImageRun({ data: meta.logo, transformation: { width: 120, height: 60 } }));
+      children.push(new TextRun({ text: "", break: 1 }));
     } catch (e) {
       console.error("Header logo failed", e);
     }
   }
-  children.push(new TextRun({ text: safe(meta.title).toUpperCase(), bold: true, size: 28, color: "4f46e5", break: meta.logo ? 1 : 0 }));
-  children.push(new TextRun({ text: `CLIENT: ${safe(meta.customer || "INTERNAL")}`, bold: true, size: 18, color: "4b5563", break: 1 }));
-  children.push(new TextRun({ text: `DATE: ${safe(meta.date)}`, size: 14, color: "9ca3af", break: 1 }));
+  
+  children.push(new TextRun({ text: safe(meta.title).toUpperCase(), bold: true, size: 32, color: "4f46e5" }));
+  children.push(new TextRun({ text: safe(meta.customer || "INTERNAL"), size: 20, color: "4f46e5", bold: true, break: 1 }));
+  children.push(new TextRun({ text: `DATE: ${safe(meta.date)}`, size: 14, color: "6b7280", break: 1 }));
 
-  return new Paragraph({ spacing: { after: 300 }, children });
+  return new Paragraph({ spacing: { after: 400, line: 360 }, children });
 };
 
 /* 🟡 GRID COMPONENTS */
 const renderComponent = (section) => {
   const titlePara = new Paragraph({
-    spacing: { after: 100 },
-    children: [new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 14, color: "111827" })]
+    spacing: { line: 240, after: 150 },
+    children: [new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 16, color: "4f46e5" })]
   });
 
   if (section.type === "text") {
     const lines = safe(section.content).split("\n");
-    const contentParas = lines.map(line => new Paragraph({ 
-      children: [new TextRun({ text: line || " ", size: 12, color: "374151" })], 
-      spacing: { after: 50 } 
+    const contentParas = lines.filter(l => l.trim()).map(line => new Paragraph({ 
+      children: [new TextRun({ text: line, size: 12, color: "1f2937" })], 
+      spacing: { line: 240, after: 100 },
+      alignment: AlignmentType.LEFT
     }));
-    return [titlePara, ...contentParas];
+    return [titlePara, ...(contentParas.length > 0 ? contentParas : [new Paragraph({ text: " " })])];
   }
 
   if (section.type === "image" && section.image) {
     try {
-      // Ensure dimensions are integers
-      const imgW = Math.round((section.layout.w / 12) * 500);
-      const imgH = Math.round(section.layout.h * 25);
+      // Better image sizing based on section layout
+      const imgW = Math.round((section.layout.w / 12) * 400);
+      const imgH = Math.round(section.layout.h * 30);
       
       return [
         titlePara,
         new Paragraph({
           alignment: AlignmentType.CENTER,
+          spacing: { after: 150 },
           children: [
             new ImageRun({
               data: section.image,
-              transformation: { width: imgW, height: imgH },
+              transformation: { width: Math.max(imgW, 200), height: Math.max(imgH, 150) },
             })
           ]
         })
       ];
     } catch (e) {
+      console.error("Image rendering error:", e);
       return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image Error", size: 10, color: "ef4444" })] })];
     }
   }
@@ -83,27 +89,36 @@ const renderComponent = (section) => {
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
         borders: { 
-          top: { style: BorderStyle.SINGLE, size: 1 }, 
-          bottom: { style: BorderStyle.SINGLE, size: 1 }, 
-          left: { style: BorderStyle.SINGLE, size: 1 }, 
-          right: { style: BorderStyle.SINGLE, size: 1 }, 
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 1 }, 
-          insideVertical: { style: BorderStyle.SINGLE, size: 1 } 
+          top: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" }, 
+          bottom: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" }, 
+          left: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" }, 
+          right: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" }, 
+          insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" }, 
+          insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" } 
         },
         rows: [
           new TableRow({
             tableHeader: true,
             children: cols.map(c => new TableCell({ 
-              shading: { fill: "f9fafb" }, 
-              children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: safe(c), bold: true, size: 11 })] })] 
+              shading: { fill: "f0f4f8" }, 
+              padding: { top: 80, bottom: 80, left: 60, right: 60 },
+              children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: safe(c), bold: true, size: 12, color: "1f2937" })] })] 
             }))
           }),
           ...(rows.length > 0 ? rows.map((r, i) => new TableRow({
             children: [
-              new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(i + 1), size: 11 })] })] }),
-              ...cols.slice(1).map(c => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: safe(r[c]), size: 11 })] })] }))
+              new TableCell({ 
+                shading: { fill: "ffffff" },
+                padding: { top: 70, bottom: 70, left: 60, right: 60 },
+                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(i + 1), size: 11, color: "6b7280" })] })] 
+              }),
+              ...cols.slice(1).map(c => new TableCell({ 
+                shading: { fill: "ffffff" },
+                padding: { top: 70, bottom: 70, left: 60, right: 60 },
+                children: [new Paragraph({ alignment: AlignmentType.LEFT, children: [new TextRun({ text: safe(r[c]) || "", size: 11, color: "374151" })] })] 
+              }))
             ]
-          })) : [new TableRow({ children: [new TableCell({ columnSpan: cols.length, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "No data rows", size: 10 })] })] })] })])
+          })) : [new TableRow({ children: [new TableCell({ columnSpan: cols.length, shading: { fill: "f9fafb" }, padding: { top: 100, bottom: 100, left: 60, right: 60 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "No data rows", size: 10, color: "9ca3af" })] })] })] })])
         ]
       })
     ];
@@ -126,11 +141,16 @@ const renderComponent = (section) => {
         rows: [
           new TableRow({
             children: fields.length > 0 ? fields.map(f => new TableCell({
-              borders: { bottom: { style: BorderStyle.SINGLE, size: 1 } },
-              padding: { top: 100, bottom: 50 },
+              borders: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "d1d5db" } },
+              padding: { top: 150, bottom: 100 },
               children: [
-                new Paragraph({ children: [new TextRun({ text: safe(f.value) || " ", bold: true, size: 12, color: "4f46e5" })] }),
-                new Paragraph({ children: [new TextRun({ text: safe(f.label).toUpperCase() || "SIGNATORY", size: 9, color: "6b7280" })] })
+                new Paragraph({ 
+                  spacing: { after: 200 },
+                  children: [new TextRun({ text: safe(f.value) || " ", bold: false, size: 12, color: "1f2937" })] 
+                }),
+                new Paragraph({ 
+                  children: [new TextRun({ text: safe(f.label).toUpperCase() || "SIGNATORY", size: 9, color: "6b7280" })] 
+                })
               ]
             })) : [new TableCell({ children: [new Paragraph(" ")] })]
           })
@@ -182,12 +202,13 @@ export const generateDoc = async (schema) => {
       cells.push(new TableCell({
         width: { size: Math.round((layout.w / 12) * 100), type: WidthType.PERCENTAGE },
         borders: { 
-          top: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
-          bottom: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
-          left: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" }, 
-          right: { style: BorderStyle.SINGLE, size: 1, color: "d1d5db" } 
+          top: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, 
+          bottom: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, 
+          left: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, 
+          right: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" } 
         },
-        padding: { top: 150, bottom: 150, left: 150, right: 150 },
+        shading: { fill: "fafbfc" },
+        padding: { top: 200, bottom: 200, left: 200, right: 200 },
         children: renderComponent(item)
       }));
       curX = layout.x + layout.w;
@@ -215,10 +236,10 @@ export const generateDoc = async (schema) => {
       },
       rows: [new TableRow({ 
         children: cells,
-        height: { value: rowHeight * 400, rule: "atLeast" }
+        height: { value: rowHeight * 500, rule: "atLeast" }
       })]
     }));
-    children.push(new Paragraph({ spacing: { after: 150 } }));
+    children.push(new Paragraph({ spacing: { after: 300 } }));
   });
 
   const doc = new Document({
