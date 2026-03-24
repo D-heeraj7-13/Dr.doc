@@ -119,47 +119,60 @@ export default function BuilderPage() {
         </header>
 
         <section style={{display:"flex" , alignItems:"flex-start", justifyContent:"space-between"}} className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end backdrop-blur-sm">
-          {/* <div className="space-y-2">
-            <label className="text-[10px] font-bold text-indigo-500 uppercase">Logo</label>
-            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e)} className="w-full text-xs text-zinc-500 file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer" />
-          </div> */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-indigo-500 uppercase">Title</label>
-            <input className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold" value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-indigo-500 uppercase">Client</label>
-            <input className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold" value={meta.customer} onChange={(e) => setMeta({ ...meta, customer: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-indigo-500 uppercase">Border</label>
-            <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 gap-1">
-              <button onClick={() => setMeta({ ...meta, hasBorder: true })} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-indigo-600 text-white" : "text-zinc-400"}`}>ON</button>
-              <button onClick={() => setMeta({ ...meta, hasBorder: false })} className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400"}`}>OFF</button>
-            </div>
-          </div>
-          
-          <aside className="space-y-4 sticky top-12 self-start bg-zinc-50/50 dark:bg-zinc-900/40 p-6 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm">
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest px-2 mb-4">Toolbar</h3>
-            <button onClick={() => addSection("text")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">📝</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Text Area</span>
-            </button>
-            <button onClick={() => addSection("table")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">📊</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Data Table</span>
-            </button>
-            <button onClick={() => addSection("image")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">🖼️</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Image Section</span>
-            </button>
-            <button onClick={() => addSection("signature")} className="w-full p-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-left flex items-center gap-4 group">
-              <span className="text-2xl">✍️</span>
-              <span className="font-bold text-xs uppercase tracking-tight">Signature</span>
-            </button>
-          </aside>
+{/* Row 1: Meta fields only */}
+<section className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 backdrop-blur-sm">
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-indigo-500 uppercase">Title</label>
+      <input
+        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+        value={meta.title}
+        onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+      />
+    </div>
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-indigo-500 uppercase">Client</label>
+      <input
+        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+        value={meta.customer}
+        onChange={(e) => setMeta({ ...meta, customer: e.target.value })}
+      />
+    </div>
+    <div className="space-y-2">
+      <label className="text-[10px] font-bold text-indigo-500 uppercase">Border</label>
+      <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 gap-1">
+        <button
+          onClick={() => setMeta({ ...meta, hasBorder: true })}
+          className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-indigo-600 text-white" : "text-zinc-400"}`}
+        >ON</button>
+        <button
+          onClick={() => setMeta({ ...meta, hasBorder: false })}
+          className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400"}`}
+        >OFF</button>
+      </div>
+    </div>
+  </div>
+</section>
 
-          
+{/* Row 2: Horizontal toolbar */}
+<div className="flex items-center gap-3 flex-wrap px-2">
+  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mr-2">Add</span>
+  {[
+    { type: "text",      emoji: "📝", label: "Text Area"   },
+    { type: "table",     emoji: "📊", label: "Data Table"  },
+    { type: "image",     emoji: "🖼️", label: "Image"       },
+    { type: "signature", emoji: "✍️", label: "Signature"   },
+  ].map(({ type, emoji, label }) => (
+    <button
+      key={type}
+      onClick={() => addSection(type)}
+      className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-xs font-bold uppercase tracking-tight"
+    >
+      <span className="text-base">{emoji}</span>
+      {label}
+    </button>
+  ))}
+</div>          
         </section>
 
         <div>
