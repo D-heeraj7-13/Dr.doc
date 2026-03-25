@@ -118,61 +118,59 @@ export default function BuilderPage() {
           </button>
         </header>
 
-        <section style={{display:"flex" , alignItems:"flex-start", justifyContent:"space-between"}} className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end backdrop-blur-sm">
-{/* Row 1: Meta fields only */}
-<section className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 backdrop-blur-sm">
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-    <div className="space-y-2">
-      <label className="text-[10px] font-bold text-indigo-500 uppercase">Title</label>
-      <input
-        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-        value={meta.title}
-        onChange={(e) => setMeta({ ...meta, title: e.target.value })}
-      />
-    </div>
-    <div className="space-y-2">
-      <label className="text-[10px] font-bold text-indigo-500 uppercase">Client</label>
-      <input
-        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-        value={meta.customer}
-        onChange={(e) => setMeta({ ...meta, customer: e.target.value })}
-      />
-    </div>
-    <div className="space-y-2">
-      <label className="text-[10px] font-bold text-indigo-500 uppercase">Border</label>
-      <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 gap-1">
-        <button
-          onClick={() => setMeta({ ...meta, hasBorder: true })}
-          className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-indigo-600 text-white" : "text-zinc-400"}`}
-        >ON</button>
-        <button
-          onClick={() => setMeta({ ...meta, hasBorder: false })}
-          className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400"}`}
-        >OFF</button>
-      </div>
-    </div>
-  </div>
-</section>
+        <section className="bg-indigo-50/50 dark:bg-indigo-900/10 p-8 rounded-3xl border border-indigo-100 dark:border-indigo-900/20 backdrop-blur-sm space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-indigo-500 uppercase">Title</label>
+              <input
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                value={meta.title}
+                onChange={(e) => setMeta({ ...meta, title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-indigo-500 uppercase">Client</label>
+              <input
+                className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                value={meta.customer}
+                onChange={(e) => setMeta({ ...meta, customer: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-indigo-500 uppercase">Border</label>
+              <div className="flex bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-1 gap-1">
+                <button
+                  onClick={() => setMeta({ ...meta, hasBorder: true })}
+                  className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${meta.hasBorder ? "bg-indigo-600 text-white" : "text-zinc-400"}`}
+                >ON</button>
+                <button
+                  onClick={() => setMeta({ ...meta, hasBorder: false })}
+                  className={`flex-1 py-1 text-[10px] font-black rounded-lg transition-all ${!meta.hasBorder ? "bg-zinc-400 text-white" : "text-zinc-400"}`}
+                >OFF</button>
+              </div>
+            </div>
+          </div>
 
-{/* Row 2: Horizontal toolbar */}
-<div className="flex items-center gap-3 flex-wrap px-2">
-  <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mr-2">Add</span>
-  {[
-    { type: "text",      emoji: "📝", label: "Text Area"   },
-    { type: "table",     emoji: "📊", label: "Data Table"  },
-    { type: "image",     emoji: "🖼️", label: "Image"       },
-    { type: "signature", emoji: "✍️", label: "Signature"   },
-  ].map(({ type, emoji, label }) => (
-    <button
-      key={type}
-      onClick={() => addSection(type)}
-      className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 transition-all text-xs font-bold uppercase tracking-tight"
-    >
-      <span className="text-base">{emoji}</span>
-      {label}
-    </button>
-  ))}
-</div>          
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest lg:mr-2">Add</span>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { type: "text", emoji: "📝", label: "Text Area" },
+                { type: "table", emoji: "📊", label: "Data Table" },
+                { type: "image", emoji: "🖼️", label: "Image" },
+                { type: "signature", emoji: "✍️", label: "Signature" },
+              ].map(({ type, emoji, label }) => (
+                <button
+                  key={type}
+                  onClick={() => addSection(type)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 min-w-[8.5rem] justify-center bg-white/90 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl hover:border-indigo-500 hover:bg-white transition-all text-xs font-bold uppercase tracking-tight"
+                >
+                  <span className="text-base leading-none">{emoji}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </section>
 
         <div>
