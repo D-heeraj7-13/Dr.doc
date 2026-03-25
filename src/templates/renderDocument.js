@@ -224,27 +224,13 @@ const renderComponent = (section) => {
 
 /* ====================== MAIN GENERATE FUNCTION ====================== */
 export const generateDoc = async (schema) => {
- const bodyChildren = [
-  ...renderFirstPage(schema.meta),
-
-  // 🟡 FORCE NEW PAGE AFTER FIRST PAGE
-  new Paragraph({
-    children: [new TextRun({ break: 1 })],
-    pageBreakBefore: true,
-  }),
-
-  // 🟡 TOC ON NEW PAGE
-  ...renderTOC(),
-
-  // 🟡 FORCE NEW PAGE AFTER TOC
-  new Paragraph({
-    children: [new TextRun({ break: 1 })],
-    pageBreakBefore: true,
-  }),
-];
-
+  
+// 🟢 REQUIRED — holds only real content (no TOC, no cover)
+const bodyChildren = [];
   // Add remaining sections from your state
-  const sorted = [...schema.sections].sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
+  const sorted = [...schema.sections]
+  .filter(s => !s.title?.toLowerCase().includes("table of contents")) // 🟢 REMOVE DUPLICATE TOC
+  .sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
 
   const rows = [];
   let currentRow = [];
@@ -296,7 +282,7 @@ export const generateDoc = async (schema) => {
       rows: [new TableRow({ children: cells, height: { value: rowHeight * 520, rule: "atLeast" } })],
     }));
 
-    bodyChildren.push(new Paragraph({ spacing: { after: 300 } }));
+    bodyChildren.push(new Paragraph({}));
   });
 
  const doc = new Document({
@@ -343,7 +329,7 @@ export const generateDoc = async (schema) => {
           ],
         }),
       },
-      children: bodyChildren.slice(3), // only content, skip first page + TOC
+      children: bodyChildren
     },
   ],
 });
