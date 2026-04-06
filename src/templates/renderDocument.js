@@ -13,17 +13,35 @@ import {
   BorderStyle,
   WidthType,
   Header,
+  PageBorderDisplay,
+  PageBorderOffsetFrom,
+  PageBorderZOrder,
 } from "docx";
 
 const safe = (val) => (val === null || val === undefined ? "" : String(val));
+const DEFAULT_COVER_LOGO = "/cover-logo.png";
 
 function cleanBase64(base64) {
   if (!base64) return "";
   return base64.replace(/^data:image\/\w+;base64,/, "");
 }
 
-function base64ToUint8Array(base64) {
-  const cleaned = cleanBase64(base64);
+function imageToUint8Array(image) {
+  if (!image) return new Uint8Array();
+
+  if (image instanceof Uint8Array) {
+    return image;
+  }
+
+  if (image instanceof ArrayBuffer) {
+    return new Uint8Array(image);
+  }
+
+  if (ArrayBuffer.isView(image)) {
+    return new Uint8Array(image.buffer, image.byteOffset, image.byteLength);
+  }
+
+  const cleaned = cleanBase64(String(image));
   const binary = atob(cleaned);
   const len = binary.length;
   const bytes = new Uint8Array(len);
@@ -39,7 +57,7 @@ const renderHeader = (meta) => {
 
   if (meta.logo) {
     try {
-      const imgData = base64ToUint8Array(meta.logo);
+      const imgData = imageToUint8Array(meta.logo);
       children.push(
         new ImageRun({
           data: imgData,
@@ -69,92 +87,55 @@ const renderHeader = (meta) => {
 /* ====================== FIRST PAGE ====================== */
 const renderFirstPage = (meta) => {
   const children = [];
+  const coverLogoData = meta.coverLogoData;
 
-  if (meta.logo) {
+  if (coverLogoData) {
     try {
-      const imgData = base64ToUint8Array(meta.logo);
       children.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { after: 280 },
+          spacing: { before: 920, after: 0 },
           children: [new ImageRun({
-            data: imgData,
-            transformation: { width: 280, height: 140 },
+            data: coverLogoData,
+            transformation: { width: 350, height: 285 },
           })],
         })
       );
     } catch (e) {
       console.error("First page big logo failed", e);
     }
+  } else {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 1160, after: 120 },
+        children: [new TextRun({
+          text: safe(meta.title).toUpperCase(),
+          size: 34,
+          color: "1e40af",
+          bold: true,
+        })],
+      })
+    );
   }
 
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
-      children: [new TextRun({
-        text: safe(meta.customer || "L&T Finance Ltd."),
-        size: 28,
-        color: "1e40af",
-        bold: true,
-      })],
-    })
-  );
-
-  children.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 350 },
-      children: [new TextRun({
-        text: safe(meta.title).toUpperCase(),
-        size: 32,
-        color: "1e40af",
-        bold: true,
-      })],
-    })
-  );
-
-  // Meta Table
-  const metaData = [
-    ["Title", safe(meta.title)],
-    ["Category", "Customer Requirement"],
-    ["Customer Name", safe(meta.customer)],
-    ["Date", safe(meta.date)],
-    ["Created By", safe(meta.createdBy || "")],
-  ];
-
-  const metaTable = new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 6, color: "94a3b8" },
-      bottom: { style: BorderStyle.SINGLE, size: 6, color: "94a3b8" },
-      left: { style: BorderStyle.SINGLE, size: 6, color: "94a3b8" },
-      right: { style: BorderStyle.SINGLE, size: 6, color: "94a3b8" },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "e2e8f0" },
-      insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "e2e8f0" },
-    },
-    rows: metaData.map(([label, value]) =>
-      new TableRow({
-        children: [
-          new TableCell({
-            shading: { fill: "f1f5f9" },
-            width: { size: 28, type: WidthType.PERCENTAGE },
-            padding: { top: 85, bottom: 85, left: 100, right: 80 },
-            children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 22 })] })],
-          }),
-          new TableCell({
-            padding: { top: 85, bottom: 85, left: 80, right: 100 },
-            children: [new Paragraph({ children: [new TextRun({ text: value, size: 22 })] })],
-          }),
-        ],
-      })
-    ),
-  });
-
-  children.push(metaTable);
-  children.push(new Paragraph({ spacing: { after: 450 } }));
+  children.push(new Paragraph({ spacing: { after: 500 } }));
 
   return children;
+};
+
+const loadDefaultCoverLogo = async () => {
+  try {
+    const response = await fetch(DEFAULT_COVER_LOGO);
+    if (!response.ok) {
+      return null;
+    }
+    const buffer = await response.arrayBuffer();
+    return new Uint8Array(buffer);
+  } catch (e) {
+    console.error("Default cover logo failed", e);
+    return null;
+  }
 };
 
 /* ====================== TABLE OF CONTENTS ====================== */
@@ -250,7 +231,7 @@ const renderComponent = (section) => {
 
   if (section.type === "image" && section.image) {
     try {
-      const imgData = base64ToUint8Array(section.image);
+      const imgData = imageToUint8Array(section.image);
 
       // Better size calculation - closer to A4 preview
       const widthPercent = (section.layout?.w || 6) / 12;
@@ -350,6 +331,11 @@ const renderComponent = (section) => {
 
 export const generateDoc = async (schema) => {
   const { meta, sections } = schema;
+  const uploadedLogoData = meta?.logo ? imageToUint8Array(meta.logo) : null;
+  const coverLogoData =
+    uploadedLogoData && uploadedLogoData.length > 0
+      ? uploadedLogoData
+      : await loadDefaultCoverLogo();
 
   // Sort sections by Y position (top to bottom)
   const sortedSections = [...sections].sort((a, b) => 
@@ -429,10 +415,21 @@ export const generateDoc = async (schema) => {
         properties: {
           page: { 
             margin: { top: 720, right: 720, bottom: 720, left: 720 },
-            size: { width: 11906, height: 16838 } // A4
-          }
+            size: { width: 11906, height: 16838 }, // A4
+            borders: {
+              pageBorders: {
+                display: PageBorderDisplay.FIRST_PAGE,
+                offsetFrom: PageBorderOffsetFrom.TEXT,
+                zOrder: PageBorderZOrder.BACK,
+              },
+              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            },
+          },
         },
-        children: renderFirstPage(meta),
+        children: renderFirstPage({ ...meta, coverLogoData }),
       },
       {
         properties: {},
