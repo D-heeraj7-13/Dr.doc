@@ -11,26 +11,53 @@ import {
   PageNumber,
   AlignmentType,
   BorderStyle,
-  PageBorderDisplay,
-  PageBorderOffsetFrom,
-  PageBorderZOrder,
   WidthType,
   Header,
 } from "docx";
 
 const safe = (val) => (val === null || val === undefined ? "" : String(val));
 
-/* ====================== SMALL HEADER (Right Aligned on all pages) ====================== */
+function cleanBase64(base64) {
+  if (!base64) return "";
+  return base64.replace(/^data:image\/\w+;base64,/, "");
+}
+
+function base64ToUint8Array(base64) {
+  const cleaned = cleanBase64(base64);
+  const binary = atob(cleaned);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/* ====================== SMALL HEADER ====================== */
 const renderHeader = (meta) => {
   const children = [];
 
   if (meta.logo) {
     try {
-      children.push(new ImageRun({ data: meta.logo, transformation: { width: 110, height: 55 } }));
-    } catch (e) {}
+      const imgData = base64ToUint8Array(meta.logo);
+      children.push(
+        new ImageRun({
+          data: imgData,
+          transformation: { width: 110, height: 55 },
+        })
+      );
+    } catch (e) {
+      console.error("Header logo failed", e);
+    }
   }
 
-  children.push(new TextRun({ text: safe(meta.title), bold: true, size: 26, color: "1e40af", break: 1 }));
+  children.push(new TextRun({
+    text: safe(meta.title),
+    bold: true,
+    size: 26,
+    color: "1e40af",
+    break: 1,
+  }));
 
   return new Paragraph({
     alignment: AlignmentType.RIGHT,
@@ -39,42 +66,55 @@ const renderHeader = (meta) => {
   });
 };
 
-/* ====================== FIRST PAGE - Big Logo + Meta Table ====================== */
+/* ====================== FIRST PAGE ====================== */
 const renderFirstPage = (meta) => {
   const children = [];
 
-  // Big Centered Logo
   if (meta.logo) {
     try {
+      const imgData = base64ToUint8Array(meta.logo);
       children.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { after: 280 },
-          children: [new ImageRun({ data: meta.logo, transformation: { width: 280, height: 140 } })],
+          children: [new ImageRun({
+            data: imgData,
+            transformation: { width: 280, height: 140 },
+          })],
         })
       );
-    } catch (e) {}
+    } catch (e) {
+      console.error("First page big logo failed", e);
+    }
   }
 
-  // Customer Name
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
-      children: [new TextRun({ text: safe(meta.customer || "L&T Finance Ltd."), size: 28, color: "1e40af", bold: true })],
+      children: [new TextRun({
+        text: safe(meta.customer || "L&T Finance Ltd."),
+        size: 28,
+        color: "1e40af",
+        bold: true,
+      })],
     })
   );
 
-  // Main Title (Big Blue)
   children.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 350 },
-      children: [new TextRun({ text: safe(meta.title).toUpperCase(), size: 32, color: "1e40af", bold: true })],
+      children: [new TextRun({
+        text: safe(meta.title).toUpperCase(),
+        size: 32,
+        color: "1e40af",
+        bold: true,
+      })],
     })
   );
 
-  // Meta Information Table
+  // Meta Table
   const metaData = [
     ["Title", safe(meta.title)],
     ["Category", "Customer Requirement"],
@@ -112,12 +152,12 @@ const renderFirstPage = (meta) => {
   });
 
   children.push(metaTable);
-  children.push(new Paragraph({ spacing: { after: 450 } })); // Good space before TOC on next page
+  children.push(new Paragraph({ spacing: { after: 450 } }));
 
   return children;
 };
 
-/* ====================== TABLE OF CONTENTS (Only Once on Page 2) ====================== */
+/* ====================== TABLE OF CONTENTS ====================== */
 const renderTOC = () => [
   new Paragraph({
     spacing: { after: 180 },
@@ -135,20 +175,53 @@ const renderTOC = () => [
     rows: [
       new TableRow({
         children: [
-          new TableCell({ width: { size: 15, type: WidthType.PERCENTAGE }, padding: { top: 80, bottom: 80 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Sr. No.", bold: true, size: 22 })] })] }),
-          new TableCell({ width: { size: 85, type: WidthType.PERCENTAGE }, padding: { top: 80, bottom: 80 }, children: [new Paragraph({ children: [new TextRun({ text: "Contents", bold: true, size: 22 })] })] }),
+          new TableCell({
+            width: { size: 15, type: WidthType.PERCENTAGE },
+            padding: { top: 80, bottom: 80 },
+            children: [new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: "Sr. No.", bold: true, size: 22 })],
+            })],
+          }),
+          new TableCell({
+            width: { size: 85, type: WidthType.PERCENTAGE },
+            padding: { top: 80, bottom: 80 },
+            children: [new Paragraph({
+              children: [new TextRun({ text: "Contents", bold: true, size: 22 })],
+            })],
+          }),
         ],
       }),
-      new TableRow({ children: [new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "1" })] })] }), new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Perimeter Firewall Design" })] })] })] }),
-      new TableRow({ children: [new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "2" })] })] }), new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Scope of Work" })] })] })] }),
-      new TableRow({ children: [new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "3" })] })] }), new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Handover" })] })] })] }),
-      new TableRow({ children: [new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "4" })] })] }), new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Project Closure" })] })] })] }),
+      new TableRow({
+        children: [
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "1" })] })] }),
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Perimeter Firewall Design" })] })] }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "2" })] })] }),
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Scope of Work" })] })] }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "3" })] })] }),
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Handover" })] })] }),
+        ],
+      }),
+      new TableRow({
+        children: [
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "4" })] })] }),
+          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Project Closure" })] })] }),
+        ],
+      }),
     ],
   }),
-  new Paragraph({ spacing: { after: 400 } }), // Good space after TOC
+  new Paragraph({ spacing: { after: 400 } }),
 ];
 
-/* ====================== RENDER OTHER SECTIONS ====================== */
+/* ====================== RENDER COMPONENT (with Image Fix) ====================== */
 const renderComponent = (section) => {
   const titlePara = new Paragraph({
     spacing: { before: 200, line: 300, after: 240 },
@@ -158,9 +231,37 @@ const renderComponent = (section) => {
   if (section.type === "text") {
     const lines = safe(section.content).split("\n");
     const paras = lines.filter(l => l.trim()).map(line =>
-      new Paragraph({ children: [new TextRun({ text: line, size: 22 })], spacing: { line: 260, after: 120 } })
+      new Paragraph({
+        children: [new TextRun({ text: line, size: 22 })],
+        spacing: { line: 260, after: 120 },
+      })
     );
     return [titlePara, ...paras];
+  }
+
+  if (section.type === "image" && section.image) {
+    try {
+      const imgData = base64ToUint8Array(section.image);
+      const imgW = Math.round(((section.layout?.w || 6) / 12) * 500);
+      const imgH = Math.round((section.layout?.h || 6) * 25);
+
+      return [
+        titlePara,
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 100 },
+          children: [
+            new ImageRun({
+              data: imgData,
+              transformation: { width: imgW, height: imgH },
+            }),
+          ],
+        }),
+      ];
+    } catch (e) {
+      console.error("Image rendering failed:", e);
+      return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image could not be loaded", size: 22, color: "ef4444" })] })];
+    }
   }
 
   if (section.type === "table") {
@@ -172,7 +273,10 @@ const renderComponent = (section) => {
       children: cols.map(c => new TableCell({
         shading: { fill: "e2e8f0" },
         padding: { top: 100, bottom: 100, left: 80, right: 80 },
-        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: safe(c), bold: true, size: 22 })] })],
+        children: [new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: safe(c), bold: true, size: 22 })],
+        })],
       })),
     });
 
@@ -224,13 +328,11 @@ const renderComponent = (section) => {
 
 /* ====================== MAIN GENERATE FUNCTION ====================== */
 export const generateDoc = async (schema) => {
-  
-// 🟢 REQUIRED — holds only real content (no TOC, no cover)
-const bodyChildren = [];
-  // Add remaining sections from your state
+  const bodyChildren = [];
+
   const sorted = [...schema.sections]
-  .filter(s => !s.title?.toLowerCase().includes("table of contents")) // 🟢 REMOVE DUPLICATE TOC
-  .sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
+    .filter(s => !s.title?.toLowerCase().includes("table of contents"))
+    .sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
 
   const rows = [];
   let currentRow = [];
@@ -257,12 +359,21 @@ const bodyChildren = [];
       const layout = item.layout || { x: 0, y: 0, w: 12, h: 8 };
 
       if (layout.x > curX) {
-        cells.push(new TableCell({ width: { size: Math.round(((layout.x - curX) / 12) * 100), type: WidthType.PERCENTAGE }, children: [new Paragraph("")], borders: { all: { style: BorderStyle.NIL } } }));
+        cells.push(new TableCell({
+          width: { size: Math.round(((layout.x - curX) / 12) * 100), type: WidthType.PERCENTAGE },
+          children: [new Paragraph("")],
+          borders: { all: { style: BorderStyle.NIL } },
+        }));
       }
 
       cells.push(new TableCell({
         width: { size: Math.round((layout.w / 12) * 100), type: WidthType.PERCENTAGE },
-        borders: { top: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, bottom: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, left: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" }, right: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" } },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
+          bottom: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
+          left: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
+          right: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
+        },
         shading: { fill: "fafbfc" },
         padding: { top: 180, bottom: 180, left: 180, right: 180 },
         children: renderComponent(item),
@@ -271,7 +382,11 @@ const bodyChildren = [];
     });
 
     if (curX < 12) {
-      cells.push(new TableCell({ width: { size: Math.round(((12 - curX) / 12) * 100), type: WidthType.PERCENTAGE }, children: [new Paragraph("")], borders: { all: { style: BorderStyle.NIL } } }));
+      cells.push(new TableCell({
+        width: { size: Math.round(((12 - curX) / 12) * 100), type: WidthType.PERCENTAGE },
+        children: [new Paragraph("")],
+        borders: { all: { style: BorderStyle.NIL } },
+      }));
     }
 
     const rowHeight = rowItems.reduce((acc, item) => Math.max(acc, item.layout?.h || 8), 8);
@@ -279,60 +394,53 @@ const bodyChildren = [];
     bodyChildren.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: { all: { style: BorderStyle.NIL } },
-      rows: [new TableRow({ children: cells, height: { value: rowHeight * 520, rule: "atLeast" } })],
+      rows: [new TableRow({
+        children: cells,
+        height: { value: rowHeight * 520, rule: "atLeast" },
+      })],
     }));
 
     bodyChildren.push(new Paragraph({}));
   });
 
- const doc = new Document({
-  sections: [
-    // 🟢 FIRST PAGE (COVER)
-    {
-      properties: {
-        page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } },
+  const doc = new Document({
+    sections: [
+      // Cover Page
+      {
+        properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
+        children: renderFirstPage(schema.meta),
       },
-      children: [
-        ...renderFirstPage(schema.meta),
-      ],
-    },
 
-    // 🟢 SECOND PAGE (TOC)
-    {
-      properties: {},
-      headers: {
-        default: new Header({ children: [renderHeader(schema.meta)] }),
+      // TOC Page
+      {
+        properties: {},
+        headers: { default: new Header({ children: [renderHeader(schema.meta)] }) },
+        children: renderTOC(),
       },
-      children: [
-        ...renderTOC(),
-      ],
-    },
 
-    // 🟢 MAIN CONTENT
-    {
-      properties: {},
-      headers: {
-        default: new Header({ children: [renderHeader(schema.meta)] }),
+      // Main Content
+      {
+        properties: {},
+        headers: { default: new Header({ children: [renderHeader(schema.meta)] }) },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ text: "Page ", size: 18 }),
+                  PageNumber.CURRENT,
+                  new TextRun({ text: " of ", size: 18 }),
+                  PageNumber.TOTAL_PAGES,
+                ],
+              }),
+            ],
+          }),
+        },
+        children: bodyChildren,
       },
-      footers: {
-        default: new Footer({
-          children: [
-            new Paragraph({
-              alignment: AlignmentType.RIGHT,
-              children: [
-                new TextRun({ text: "Page ", size: 18 }),
-                PageNumber.CURRENT,
-                new TextRun({ text: " of ", size: 18 }),
-                PageNumber.TOTAL_PAGES,
-              ],
-            }),
-          ],
-        }),
-      },
-      children: bodyChildren
-    },
-  ],
-});
+    ],
+  });
 
   return await Packer.toBlob(doc);
 };
