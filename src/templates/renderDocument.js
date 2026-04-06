@@ -224,85 +224,104 @@ const renderTOC = () => [
 /* ====================== RENDER COMPONENT (with Image Fix) ====================== */
 const renderComponent = (section) => {
   const titlePara = new Paragraph({
-    spacing: { before: 200, line: 300, after: 240 },
-    children: [new TextRun({ text: safe(section.title).toUpperCase(), bold: true, size: 28, color: "1e40af" })],
+    spacing: { before: 300, after: 200, line: 300 },
+    children: [
+      new TextRun({
+        text: safe(section.title).toUpperCase(),
+        bold: true,
+        size: 28,
+        color: "1e40af",
+      }),
+    ],
   });
-
   if (section.type === "text") {
-    const lines = safe(section.content).split("\n");
-    const paras = lines.filter(l => l.trim()).map(line =>
-      new Paragraph({
-        children: [new TextRun({ text: line, size: 22 })],
-        spacing: { line: 260, after: 120 },
-      })
-    );
+    const lines = safe(section.content || "").split("\n");
+    const paras = lines
+      .filter((l) => l.trim())
+      .map(
+        (line) =>
+          new Paragraph({
+            children: [new TextRun({ text: line, size: 22 })],
+            spacing: { before: 60, after: 120, line: 260 },
+          })
+      );
     return [titlePara, ...paras];
   }
 
   if (section.type === "image" && section.image) {
     try {
       const imgData = base64ToUint8Array(section.image);
-      const imgW = Math.round(((section.layout?.w || 6) / 12) * 500);
-      const imgH = Math.round((section.layout?.h || 6) * 25);
+
+      // Better size calculation - closer to A4 preview
+      const widthPercent = (section.layout?.w || 6) / 12;
+      const imgWidth = Math.round(460 * widthPercent); // max ~460pt for A4 content area
+      const imgHeight = Math.round(imgWidth * 0.75);   // default 4:3 ratio, or improve with real aspect ratio
 
       return [
         titlePara,
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          spacing: { before: 100, after: 100 },
+          spacing: { before: 120, after: 180 },
           children: [
             new ImageRun({
               data: imgData,
-              transformation: { width: imgW, height: imgH },
+              transformation: { width: imgWidth, height: imgHeight },
             }),
           ],
         }),
       ];
     } catch (e) {
-      console.error("Image rendering failed:", e);
-      return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image could not be loaded", size: 22, color: "ef4444" })] })];
+      console.error("Image failed", e);
+      return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image failed to load", color: "ef4444" })] })];
     }
   }
-
   if (section.type === "table") {
-    const cols = section.columns || ["Sr No.", "Description", "SOW", "Comments"];
+    // ... your existing table rendering logic (it's mostly fine)
+    // Just make sure borders are clean
+    const cols = section.columns || ["Sr No", "Column 1", "Column 2", "Column 3"];
     const rows = section.rows || [];
 
     const headerRow = new TableRow({
       tableHeader: true,
-      children: cols.map(c => new TableCell({
-        shading: { fill: "e2e8f0" },
-        padding: { top: 100, bottom: 100, left: 80, right: 80 },
-        children: [new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: safe(c), bold: true, size: 22 })],
-        })],
-      })),
+      children: cols.map((c) =>
+        new TableCell({
+          shading: { fill: "e2e8f0" },
+          borders: { all: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" } },
+          padding: { top: 120, bottom: 120, left: 100, right: 100 },
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: safe(c), bold: true, size: 22 })],
+            }),
+          ],
+        })
+      ),
     });
+    const dataRows = rows.map((r, i) =>
+      new TableRow({
+        children: cols.map((col) =>
+          new TableCell({
+            borders: { all: { style: BorderStyle.SINGLE, size: 6, color: "cbd5e1" } },
+            shading: { fill: i % 2 === 0 ? "ffffff" : "f8fafc" },
+            padding: { top: 100, bottom: 100, left: 100, right: 100 },
+            children: [
+              new Paragraph({
+                children: [new TextRun({ text: safe(r[col]) || "", size: 21 })],
+              }),
+            ],
+          })
+        ),
+      })
+    );
 
-    const dataRows = rows.length > 0 ? rows.map((r, i) => new TableRow({
-      children: cols.map(col => new TableCell({
-        shading: { fill: i % 2 === 0 ? "ffffff" : "f8fafc" },
-        padding: { top: 90, bottom: 90, left: 80, right: 80 },
-        children: [new Paragraph({
-          alignment: col.toLowerCase().includes("sr") ? AlignmentType.CENTER : AlignmentType.LEFT,
-          children: [new TextRun({ text: safe(r[col]) || "", size: 21 })],
-        })],
-      })),
-    })) : [];
-
-    return [titlePara, new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-        bottom: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-        left: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-        right: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-        insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "e2e8f0" },
-        insideVertical: { style: BorderStyle.SINGLE, size: 6, color: "e2e8f0" },
-      },
-      rows: [headerRow, ...dataRows],
-    })];
+    return [
+      titlePara,
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: { all: { style: BorderStyle.SINGLE, size: 10, color: "94a3b8" } }, // clean outer border
+        rows: [headerRow, ...dataRows],
+      }),
+    ];
   }
 
   if (section.type === "signature") {
@@ -327,110 +346,113 @@ const renderComponent = (section) => {
 };
 
 /* ====================== MAIN GENERATE FUNCTION ====================== */
+// Replace your entire generateDoc function with this improved version
+
 export const generateDoc = async (schema) => {
+  const { meta, sections } = schema;
+
+  // Sort sections by Y position (top to bottom)
+  const sortedSections = [...sections].sort((a, b) => 
+    (a.layout?.y || 0) - (b.layout?.y || 0)
+  );
+
   const bodyChildren = [];
 
-  const sorted = [...schema.sections]
-    .filter(s => !s.title?.toLowerCase().includes("table of contents"))
-    .sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
+  let i = 0;
+  while (i < sortedSections.length) {
+    const currentY = sortedSections[i].layout?.y || 0;
+    const rowSections = [];
 
-  const rows = [];
-  let currentRow = [];
-  let lastY = -1;
-
-  sorted.forEach((s) => {
-    if (currentRow.length === 0 || Math.abs((s.layout?.y || 0) - lastY) < 1) {
-      currentRow.push(s);
-      lastY = s.layout?.y || 0;
-    } else {
-      rows.push(currentRow);
-      currentRow = [s];
-      lastY = s.layout?.y || 0;
+    // Collect all sections on the same "row" (same or very close Y)
+    while (i < sortedSections.length && Math.abs((sortedSections[i].layout?.y || 0) - currentY) < 2) {
+      rowSections.push(sortedSections[i]);
+      i++;
     }
-  });
-  if (currentRow.length > 0) rows.push(currentRow);
 
-  rows.forEach((rowItems) => {
-    rowItems.sort((a, b) => (a.layout?.x || 0) - (b.layout?.x || 0));
-    const cells = [];
-    let curX = 0;
+    if (rowSections.length === 1) {
+      // Single section - full width
+      const section = rowSections[0];
+      bodyChildren.push(...renderComponent(section));
+      bodyChildren.push(new Paragraph({ spacing: { after: 240 } }));
+    } 
+    else {
+      // Multiple sections side-by-side → use Table for row
+      rowSections.sort((a, b) => (a.layout?.x || 0) - (b.layout?.x || 0));
 
-    rowItems.forEach((item) => {
-      const layout = item.layout || { x: 0, y: 0, w: 12, h: 8 };
+      const cells = [];
 
-      if (layout.x > curX) {
-        cells.push(new TableCell({
-          width: { size: Math.round(((layout.x - curX) / 12) * 100), type: WidthType.PERCENTAGE },
-          children: [new Paragraph("")],
-          borders: { all: { style: BorderStyle.NIL } },
-        }));
+      rowSections.forEach((section) => {
+        const widthPercent = Math.round(((section.layout?.w || 6) / 12) * 100);
+
+        cells.push(
+          new TableCell({
+            width: { size: widthPercent, type: WidthType.PERCENTAGE },
+            borders: { all: { style: BorderStyle.NIL } },   // <--- Clean: No ugly borders
+            padding: { top: 120, bottom: 120, left: 80, right: 80 },
+            children: renderComponent(section),
+          })
+        );
+      });
+
+      // Add empty cell if total width < 12
+      const totalW = rowSections.reduce((sum, s) => sum + (s.layout?.w || 6), 0);
+      if (totalW < 12) {
+        cells.push(
+          new TableCell({
+            width: { size: Math.round(((12 - totalW) / 12) * 100), type: WidthType.PERCENTAGE },
+            borders: { all: { style: BorderStyle.NIL } },
+            children: [new Paragraph("")],
+          })
+        );
       }
 
-      cells.push(new TableCell({
-        width: { size: Math.round((layout.w / 12) * 100), type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
-          bottom: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
-          left: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
-          right: { style: BorderStyle.SINGLE, size: 6, color: "e5e7eb" },
-        },
-        shading: { fill: "fafbfc" },
-        padding: { top: 180, bottom: 180, left: 180, right: 180 },
-        children: renderComponent(item),
-      }));
-      curX = layout.x + layout.w;
-    });
+      bodyChildren.push(
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: { all: { style: BorderStyle.NIL } },   // No outer border mess
+          rows: [
+            new TableRow({
+              children: cells,
+              height: { value: 5200, rule: "atLeast" }, // Adjust if needed
+            }),
+          ],
+        })
+      );
 
-    if (curX < 12) {
-      cells.push(new TableCell({
-        width: { size: Math.round(((12 - curX) / 12) * 100), type: WidthType.PERCENTAGE },
-        children: [new Paragraph("")],
-        borders: { all: { style: BorderStyle.NIL } },
-      }));
+      bodyChildren.push(new Paragraph({ spacing: { after: 180 } }));
     }
-
-    const rowHeight = rowItems.reduce((acc, item) => Math.max(acc, item.layout?.h || 8), 8);
-
-    bodyChildren.push(new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: { all: { style: BorderStyle.NIL } },
-      rows: [new TableRow({
-        children: cells,
-        height: { value: rowHeight * 520, rule: "atLeast" },
-      })],
-    }));
-
-    bodyChildren.push(new Paragraph({}));
-  });
+  }
 
   const doc = new Document({
     sections: [
-      // Cover Page
       {
-        properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
-        children: renderFirstPage(schema.meta),
+        properties: {
+          page: { 
+            margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            size: { width: 11906, height: 16838 } // A4
+          }
+        },
+        children: renderFirstPage(meta),
       },
-
-      // TOC Page
       {
         properties: {},
-        headers: { default: new Header({ children: [renderHeader(schema.meta)] }) },
+        headers: { default: new Header({ children: [renderHeader(meta)] }) },
         children: renderTOC(),
       },
-
-      // Main Content
       {
-        properties: {},
-        headers: { default: new Header({ children: [renderHeader(schema.meta)] }) },
+        properties: {
+          page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
+        },
+        headers: { default: new Header({ children: [renderHeader(meta)] }) },
         footers: {
           default: new Footer({
             children: [
               new Paragraph({
                 alignment: AlignmentType.RIGHT,
                 children: [
-                  new TextRun({ text: "Page ", size: 18 }),
+                  new TextRun("Page "),
                   PageNumber.CURRENT,
-                  new TextRun({ text: " of ", size: 18 }),
+                  new TextRun(" of "),
                   PageNumber.TOTAL_PAGES,
                 ],
               }),
