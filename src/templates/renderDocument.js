@@ -432,13 +432,43 @@ export const generateDoc = async (schema) => {
         children: renderFirstPage({ ...meta, coverLogoData }),
       },
       {
-        properties: {},
+        properties: {
+          page: {
+            margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            size: { width: 11906, height: 16838 },
+            borders: {
+              pageBorders: {
+                display: PageBorderDisplay.ALL_PAGES,
+                offsetFrom: PageBorderOffsetFrom.TEXT,
+                zOrder: PageBorderZOrder.BACK,
+              },
+              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            },
+          },
+        },
         headers: { default: new Header({ children: [renderHeader(meta)] }) },
         children: renderTOC(),
       },
       {
         properties: {
-          page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
+          page: {
+            margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            size: { width: 11906, height: 16838 },
+            borders: {
+              pageBorders: {
+                display: PageBorderDisplay.ALL_PAGES,
+                offsetFrom: PageBorderOffsetFrom.TEXT,
+                zOrder: PageBorderZOrder.BACK,
+              },
+              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            },
+          }
         },
         headers: { default: new Header({ children: [renderHeader(meta)] }) },
         footers: {
