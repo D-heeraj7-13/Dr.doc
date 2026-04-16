@@ -6,11 +6,10 @@ import { generateDoc } from "../../src/templates/renderDocument";
 import { downloadFile } from "../../src/utils/downloadDoc";
 import DynamicForm from "../../src/components/DynamicForm";
 import { Responsive, WidthProvider } from "react-grid-layout/legacy";
-
+import type { Layout, LayoutItem } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
+const GridLayout = WidthProvider(Responsive);
 const TabletModel = dynamic(() => import("../../src/components/TabletModel"), { ssr: false });
 
 export default function BuilderPage() {
@@ -68,13 +67,6 @@ export default function BuilderPage() {
     }
 
     setSections([...sections, newSection]);
-  };
-
-  const onLayoutChange = (currentLayout: any) => {
-    setSections(prev => prev.map(section => {
-      const l = currentLayout.find((item: any) => item.i === section.id);
-      return l ? { ...section, layout: l } : section;
-    }));
   };
 
   const handleDownload = async () => {
@@ -180,14 +172,28 @@ export default function BuilderPage() {
                 <p className="font-black text-xl italic tracking-tight uppercase">No content added</p>
               </div>
             ) : (
-              <ResponsiveGridLayout
+              <GridLayout
                 className="layout"
-                layouts={{ lg: sections.map(s => s.layout) }}
-                breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-                cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+                layouts={{
+                  lg: sections.map((s) => ({
+                    i: s.id,
+                    ...s.layout,
+                  })),
+                }}
+                cols={{ lg: 12 }}
+                breakpoints={{ lg: 1200 }}
                 rowHeight={30}
-                onLayoutChange={onLayoutChange}
+                onLayoutChange={(currentLayout: Layout) => {
+                  const updated = sections.map((sec) => {
+                    const l = currentLayout.find((x: LayoutItem) => x.i === sec.id);
+                    return l ? { ...sec, layout: l } : sec;
+                  });
+                  setSections(updated);
+                }}
                 draggableHandle=".drag-handle"
+                compactType={null}
+                margin={[0, 0]}
+                containerPadding={[0, 0]}
               >
                 {sections.map((section, index) => (
                   <div key={section.id} className="group/grid-item">
@@ -206,7 +212,7 @@ export default function BuilderPage() {
                     />
                   </div>
                 ))}
-              </ResponsiveGridLayout>
+              </GridLayout>
             )}
           </div>
 

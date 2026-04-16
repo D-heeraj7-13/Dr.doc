@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { generateDoc } from "../../src/templates/renderDocument";
 import { downloadFile } from "../../src/utils/downloadDoc";
 import DynamicForm from "../../src/components/DynamicForm";
+import { Responsive, WidthProvider } from "react-grid-layout/legacy";
+import type { Layout, LayoutItem } from "react-grid-layout/legacy";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+
+const GridLayout = WidthProvider(Responsive);
 
 export default function SowPage() {
   const [meta, setMeta] = useState<any>({
@@ -87,7 +93,7 @@ export default function SowPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-8 space-y-12 pb-20">
+    <div className="max-w-7xl mx-auto p-8 space-y-12 pb-20">
       <header className="flex justify-between items-end border-b pb-6">
         <div>
           <h1 className="text-4xl font-black text-blue-600 dark:text-blue-400 uppercase tracking-tighter">
@@ -156,25 +162,47 @@ export default function SowPage() {
           </div>
         </div>
       </section>
-
-      <div className="space-y-4">
-        {sections.map((section, index) => (
-          <DynamicForm
-            key={section.id || index}
-            section={section}
-            index={index}
-            updateSection={(idx, updated) => {
-              const next = [...sections];
-              next[idx] = updated;
-              setSections(next);
-            }}
-            removeSection={(idx) => {
-              setSections(sections.filter((_, i) => i !== idx));
-            }}
-            handleImageUpload={() => {}}
-          />
-        ))}
+      <div className="flex justify-left">
+       <section className="w-full p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner">
+  <GridLayout
+    layouts={{
+      lg: sections.map((s) => ({
+        i: s.id,
+        ...s.layout,
+      })),
+    }}
+    cols={{ lg: 12 }}
+    breakpoints={{ lg: 1200 }}
+    rowHeight={30}
+    draggableHandle=".drag-handle"
+    onLayoutChange={(newLayout: Layout) => {
+      const updated = sections.map((sec) => {
+        const l = newLayout.find((x: LayoutItem) => x.i === sec.id);
+        return l ? { ...sec, layout: l } : sec;
+      });
+      setSections(updated);
+    }}
+  >
+    {sections.map((section, index) => (
+      <div key={section.id}>
+        <DynamicForm
+          section={section}
+          index={index}
+          updateSection={(idx, updated) => {
+            const next = [...sections];
+            next[idx] = updated;
+            setSections(next);
+          }}
+          removeSection={(idx) => {
+            setSections(sections.filter((_, i) => i !== idx));
+          }}
+          handleImageUpload={() => {}}
+        />
       </div>
+    ))}
+  </GridLayout>
+</section>
+    </div>        
     </div>
   );
 }

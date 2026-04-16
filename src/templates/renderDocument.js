@@ -17,10 +17,8 @@ import {
   PageBorderOffsetFrom,
   PageBorderZOrder,
 } from "docx";
-
 const safe = (val) => (val === null || val === undefined ? "" : String(val));
 const DEFAULT_COVER_LOGO = "/cover-logo.png";
-
 function cleanBase64(base64) {
   if (!base64) return "";
   return base64.replace(/^data:image\/\w+;base64,/, "");
@@ -201,7 +199,6 @@ const renderTOC = () => [
   }),
   new Paragraph({ spacing: { after: 400 } }),
 ];
-
 /* ====================== RENDER COMPONENT (with Image Fix) ====================== */
 const renderComponent = (section) => {
   const titlePara = new Paragraph({
@@ -233,11 +230,11 @@ const renderComponent = (section) => {
     try {
       const imgData = imageToUint8Array(section.image);
 
-      // Better size calculation - closer to A4 preview
-      const widthPercent = (section.layout?.w || 6) / 12;
-      const imgWidth = Math.round(460 * widthPercent); // max ~460pt for A4 content area
-      const imgHeight = Math.round(imgWidth * 0.75);   // default 4:3 ratio, or improve with real aspect ratio
+      const colWidth = (section.layout?.w || 6) / 12;
+      const pageWidth = 900; // approx usable width in px
 
+      const imgWidth = Math.round(pageWidth * colWidth);
+      const imgHeight = Math.round(imgWidth * 0.6);
       return [
         titlePara,
         new Paragraph({
@@ -338,7 +335,7 @@ export const generateDoc = async (schema) => {
       : await loadDefaultCoverLogo();
 
   // Sort sections by Y position (top to bottom)
-  const sortedSections = [...sections].sort((a, b) => 
+  const sortedSections = [...sections].sort((a, b) =>
     (a.layout?.y || 0) - (b.layout?.y || 0)
   );
 
@@ -354,13 +351,14 @@ export const generateDoc = async (schema) => {
       rowSections.push(sortedSections[i]);
       i++;
     }
+    const maxH = Math.max(...rowSections.map((s) => s.layout?.h || 6));
 
     if (rowSections.length === 1) {
       // Single section - full width
       const section = rowSections[0];
       bodyChildren.push(...renderComponent(section));
       bodyChildren.push(new Paragraph({ spacing: { after: 240 } }));
-    } 
+    }
     else {
       // Multiple sections side-by-side → use Table for row
       rowSections.sort((a, b) => (a.layout?.x || 0) - (b.layout?.x || 0));
@@ -399,7 +397,7 @@ export const generateDoc = async (schema) => {
           rows: [
             new TableRow({
               children: cells,
-              height: { value: 5200, rule: "atLeast" }, // Adjust if needed
+              height: { value: maxH * 300, rule: "atLeast" },
             }),
           ],
         })
@@ -413,7 +411,7 @@ export const generateDoc = async (schema) => {
     sections: [
       {
         properties: {
-          page: { 
+          page: {
             margin: { top: 720, right: 720, bottom: 720, left: 720 },
             size: { width: 11906, height: 16838 }, // A4
             borders: {
