@@ -1,15 +1,89 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { generateDoc } from "../../src/templates/renderDocument";
 import { downloadFile } from "../../src/utils/downloadDoc";
 import DynamicForm from "../../src/components/DynamicForm";
 import { Responsive, WidthProvider } from "react-grid-layout/legacy";
-import type { Layout, LayoutItem } from "react-grid-layout/legacy";
+import type { LayoutItem } from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 const GridLayout = WidthProvider(Responsive);
+
+const normalizeHeading = (line: string) =>
+  line.replace(/^\s*\d+[.)]\s*/, "").trim();
+
+const buildTocContent = (titles: string[]) =>
+  titles.map((title, index) => `${index + 1}. ${title}`).join("\n");
+
+const sectionExistsByTitle = (sections: any[], title: string) =>
+  sections.some(
+    (section) =>
+      section.id !== "toc" &&
+      section.type !== "signature" &&
+      String(section.title || "").trim().toLowerCase() === title.toLowerCase()
+  );
+
+const syncTocSection = (sections: any[]) => {
+  const tocIndex = sections.findIndex((section) => section.id === "toc");
+  if (tocIndex < 0) return sections;
+
+  const titles = sections
+    .filter((section) => section.id !== "toc" && section.type !== "signature")
+    .map((section) => String(section.title || "").trim())
+    .filter(Boolean);
+
+  const next = [...sections];
+  next[tocIndex] = {
+    ...next[tocIndex],
+    content: buildTocContent(titles),
+  };
+  return next;
+};
+
+const insertTextSectionBelowAcceptance = (sections: any[], title: string) => {
+  const acceptanceIndex = sections.findIndex((section) => section.id === "acceptance");
+  const acceptanceSection = acceptanceIndex >= 0 ? sections[acceptanceIndex] : null;
+  const baseY = acceptanceSection
+    ? (acceptanceSection.layout?.y || 0) + (acceptanceSection.layout?.h || 0) + 1
+    : Math.max(...sections.map((section) => (section.layout?.y || 0) + (section.layout?.h || 0)), 0) + 1;
+
+  const newSectionHeight = 6;
+  const shiftBy = newSectionHeight + 1;
+  const nextSection = {
+    id: `section-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    type: "text",
+    title,
+    content: "",
+    layout: { x: 0, y: baseY, w: 12, h: newSectionHeight },
+  };
+
+  const shifted = sections.map((section) => {
+    if (section.id === "toc") return section;
+    const y = section.layout?.y || 0;
+    if (y >= baseY) {
+      return {
+        ...section,
+        layout: {
+          ...section.layout,
+          y: y + shiftBy,
+        },
+      };
+    }
+    return section;
+  });
+
+  if (acceptanceIndex >= 0) {
+    return [
+      ...shifted.slice(0, acceptanceIndex + 1),
+      nextSection,
+      ...shifted.slice(acceptanceIndex + 1),
+    ];
+  }
+
+  return [...shifted, nextSection];
+};
 
 export default function SowPage() {
   const [meta, setMeta] = useState<any>({
@@ -26,7 +100,7 @@ export default function SowPage() {
       id: "toc",
       type: "text",
       title: "Table of Contents",
-      content: `1. Executive Summary\n2. Project Objectives\n3. Deliverables\n4. Project Sign-off`,
+      content: "",
       layout: { x: 0, y: 0, w: 12, h: 6 }
     },
     {
@@ -71,6 +145,47 @@ export default function SowPage() {
     },
   ]);
 
+  useEffect(() => {
+    setSections((prev) => syncTocSection(prev));
+  }, []);
+
+  const updateSection = (idx: number, updated: any) => {
+    setSections((prev) => {
+      const next = [...prev];
+      next[idx] = updated;
+      return syncTocSection(next);
+    });
+  };
+
+  const generateHeadersFromTocRows = () => {
+    setSections((prev) => {
+      const tocSection = prev.find((section) => section.id === "toc");
+      if (!tocSection) return prev;
+
+      const requestedHeadings = String(tocSection.content || "")
+        .split("\n")
+        .map(normalizeHeading)
+        .filter(Boolean);
+
+      let next = [...prev];
+      requestedHeadings.forEach((heading) => {
+        if (!sectionExistsByTitle(next, heading)) {
+          next = insertTextSectionBelowAcceptance(next, heading);
+        }
+      });
+
+      return syncTocSection(next);
+    });
+  };
+
+  const addSectionBelowAcceptance = () => {
+    setSections((prev) => {
+      const next = insertTextSectionBelowAcceptance(prev, "New Section Header");
+      return syncTocSection(next);
+    });
+  };
+
+  const displaySections = useMemo(() => sections, [sections]);
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -81,15 +196,21 @@ export default function SowPage() {
       reader.readAsArrayBuffer(file);
     }
   };
-
+  
   const handleDownload = async () => {
     try {
-      const blob = await generateDoc({ meta, sections });
+      const blob = await generateDoc({ meta, sections: displaySections });
       downloadFile(blob, `SOW_${meta.customer || "Project"}.docx`);
     } catch (err) {
       console.error("Failed to generate document:", err);
       alert("Error generating document. Check console for details.");
     }
+  };
+  const removeSection = (idx: number) => {
+    setSections((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return syncTocSection(next);
+    });
   };
 
   return (
@@ -162,6 +283,15 @@ export default function SowPage() {
           </div>
         </div>
       </section>
+      <section className="flex flex-col md:flex-row gap-3 md:items-center md:justify-end">
+         
+        <button
+          onClick={addSectionBelowAcceptance}
+          className="w-full md:w-auto py-2 px-4 text-[10px] font-black uppercase tracking-widest rounded-xl border-2 border-dashed border-blue-300 text-blue-700 hover:bg-blue-50 transition-all"
+        >
+          + Add Section Below Formal Acceptance
+        </button>
+      </section>
       <div className="flex justify-left">
        <section className="w-full p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner">
   <GridLayout
@@ -175,31 +305,26 @@ export default function SowPage() {
     breakpoints={{ lg: 1200 }}
     rowHeight={30}
     draggableHandle=".drag-handle"
-    onLayoutChange={(newLayout: Layout) => {
+    onLayoutChange={(newLayout) => {
+      const layoutItems = newLayout as readonly LayoutItem[];
       const updated = sections.map((sec) => {
-        const l = newLayout.find((x: LayoutItem) => x.i === sec.id);
+        const l = layoutItems.find((x) => x.i === sec.id);
         return l ? { ...sec, layout: l } : sec;
       });
       setSections(updated);
     }}
   >
-    {sections.map((section, index) => (
-      <div key={section.id}>
-        <DynamicForm
-          section={section}
-          index={index}
-          updateSection={(idx, updated) => {
-            const next = [...sections];
-            next[idx] = updated;
-            setSections(next);
-          }}
-          removeSection={(idx) => {
-            setSections(sections.filter((_, i) => i !== idx));
-          }}
-          handleImageUpload={() => {}}
-        />
-      </div>
-    ))}
+   {displaySections.map((section, index) => (
+              <div key={section.id}>
+                <DynamicForm
+                  section={section}
+                  index={index}
+                  updateSection={updateSection}
+                  removeSection={removeSection}
+                  handleImageUpload={() => {}}
+                />
+              </div>
+            ))}
   </GridLayout>
 </section>
     </div>        

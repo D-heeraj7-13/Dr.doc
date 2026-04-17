@@ -13,12 +13,13 @@ import {
   BorderStyle,
   WidthType,
   Header,
-  PageBorderDisplay,
-  PageBorderOffsetFrom,
-  PageBorderZOrder,
 } from "docx";
+import { HeadingLevel } from "docx";
+
 const safe = (val) => (val === null || val === undefined ? "" : String(val));
+
 const DEFAULT_COVER_LOGO = "/cover-logo.png";
+
 function cleanBase64(base64) {
   if (!base64) return "";
   return base64.replace(/^data:image\/\w+;base64,/, "");
@@ -27,14 +28,8 @@ function cleanBase64(base64) {
 function imageToUint8Array(image) {
   if (!image) return new Uint8Array();
 
-  if (image instanceof Uint8Array) {
-    return image;
-  }
-
-  if (image instanceof ArrayBuffer) {
-    return new Uint8Array(image);
-  }
-
+  if (image instanceof Uint8Array) return image;
+  if (image instanceof ArrayBuffer) return new Uint8Array(image);
   if (ArrayBuffer.isView(image)) {
     return new Uint8Array(image.buffer, image.byteOffset, image.byteLength);
   }
@@ -48,9 +43,8 @@ function imageToUint8Array(image) {
   }
   return bytes;
 }
-
-/* ====================== SMALL HEADER ====================== */
-const renderHeader = (meta) => {
+/* ====================== NEW TOC HEADER (you can customize this) ====================== */
+const renderTOCHeader = (meta) => {
   const children = [];
 
   if (meta.logo) {
@@ -62,6 +56,40 @@ const renderHeader = (meta) => {
           transformation: { width: 110, height: 55 },
         })
       );
+    } catch (e) {}
+  }
+
+  // You can make TOC header different — e.g. bigger title, different text, or "Table of Contents" label
+  children.push(new TextRun({
+    text: safe(meta.title),
+    bold: true,
+    size: 28,           // slightly bigger
+    color: "1e40af",
+    break: 1,
+  }));
+
+  children.push(new TextRun({
+    text: "TABLE OF CONTENTS",
+    bold: true,
+    size: 24,
+    color: "334155",
+    break: 1,
+  }));
+
+  return new Paragraph({
+    alignment: AlignmentType.RIGHT,
+    spacing: { after: 240 },
+    children,
+  });
+};
+/* ====================== HEADER & FIRST PAGE ====================== */
+const renderHeader = (meta) => {
+  const children = [];
+
+  if (meta.logo) {
+    try {
+      const imgData = imageToUint8Array(meta.logo);
+      children.push(new ImageRun({ data: imgData, transformation: { width: 110, height: 55 } }));
     } catch (e) {
       console.error("Header logo failed", e);
     }
@@ -82,52 +110,36 @@ const renderHeader = (meta) => {
   });
 };
 
-/* ====================== FIRST PAGE ====================== */
 const renderFirstPage = (meta) => {
   const children = [];
   const coverLogoData = meta.coverLogoData;
 
   if (coverLogoData) {
     try {
-      children.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 920, after: 0 },
-          children: [new ImageRun({
-            data: coverLogoData,
-            transformation: { width: 350, height: 285 },
-          })],
-        })
-      );
+      children.push(new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 920, after: 0 },
+        children: [new ImageRun({ data: coverLogoData, transformation: { width: 350, height: 285 } })],
+      }));
     } catch (e) {
       console.error("First page big logo failed", e);
     }
   } else {
-    children.push(
-      new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { before: 1160, after: 120 },
-        children: [new TextRun({
-          text: safe(meta.title).toUpperCase(),
-          size: 34,
-          color: "1e40af",
-          bold: true,
-        })],
-      })
-    );
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 1160, after: 120 },
+      children: [new TextRun({ text: safe(meta.title).toUpperCase(), size: 34, color: "1e40af", bold: true })],
+    }));
   }
 
   children.push(new Paragraph({ spacing: { after: 500 } }));
-
   return children;
 };
 
 const loadDefaultCoverLogo = async () => {
   try {
     const response = await fetch(DEFAULT_COVER_LOGO);
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) return null;
     const buffer = await response.arrayBuffer();
     return new Uint8Array(buffer);
   } catch (e) {
@@ -136,127 +148,46 @@ const loadDefaultCoverLogo = async () => {
   }
 };
 
-/* ====================== TABLE OF CONTENTS ====================== */
-const renderTOC = () => [
+/* ====================== MANUAL TOC ====================== */
+const renderManualTOC = (tocText) => [   // ← Fixed: removed ": string"
   new Paragraph({
-    spacing: { after: 180 },
-    children: [new TextRun({ text: "Table of Contents", bold: true, size: 28, color: "1e40af" })],
+    text: "Table of Contents",
+    heading: HeadingLevel.HEADING_1,
+    spacing: { after: 200 },
   }),
-  new Table({
-    width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-      bottom: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-      left: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-      right: { style: BorderStyle.SINGLE, size: 8, color: "94a3b8" },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 6, color: "e2e8f0" },
-    },
-    rows: [
-      new TableRow({
-        children: [
-          new TableCell({
-            width: { size: 15, type: WidthType.PERCENTAGE },
-            padding: { top: 80, bottom: 80 },
-            children: [new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: "Sr. No.", bold: true, size: 22 })],
-            })],
-          }),
-          new TableCell({
-            width: { size: 85, type: WidthType.PERCENTAGE },
-            padding: { top: 80, bottom: 80 },
-            children: [new Paragraph({
-              children: [new TextRun({ text: "Contents", bold: true, size: 22 })],
-            })],
-          }),
-        ],
-      }),
-      new TableRow({
-        children: [
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "1" })] })] }),
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Perimeter Firewall Design" })] })] }),
-        ],
-      }),
-      new TableRow({
-        children: [
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "2" })] })] }),
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Scope of Work" })] })] }),
-        ],
-      }),
-      new TableRow({
-        children: [
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "3" })] })] }),
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Handover" })] })] }),
-        ],
-      }),
-      new TableRow({
-        children: [
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "4" })] })] }),
-          new TableCell({ padding: { top: 70, bottom: 70 }, children: [new Paragraph({ children: [new TextRun({ text: "Project Closure" })] })] }),
-        ],
-      }),
-    ],
-  }),
-  new Paragraph({ spacing: { after: 400 } }),
+  ...tocText.split("\n").map((line) =>
+    new Paragraph({
+      text: line.trim(),
+      spacing: { before: 60, after: 60, line: 260 },
+      indent: { left: 240 },
+    })
+  ),
+  new Paragraph({ text: "", pageBreakBefore: true }),
 ];
-/* ====================== RENDER COMPONENT (with Image Fix) ====================== */
+
+/* ====================== RENDER COMPONENT ====================== */
 const renderComponent = (section) => {
   const titlePara = new Paragraph({
-    spacing: { before: 300, after: 200, line: 300 },
-    children: [
-      new TextRun({
-        text: safe(section.title).toUpperCase(),
-        bold: true,
-        size: 28,
-        color: "1e40af",
-      }),
-    ],
+    text: safe(section.title),
+    heading: HeadingLevel.HEADING_1,
+    spacing: { before: 300, after: 200 },
   });
+
   if (section.type === "text") {
     const lines = safe(section.content || "").split("\n");
     const paras = lines
       .filter((l) => l.trim())
-      .map(
-        (line) =>
-          new Paragraph({
-            children: [new TextRun({ text: line, size: 22 })],
-            spacing: { before: 60, after: 120, line: 260 },
-          })
+      .map((line) =>
+        new Paragraph({
+          children: [new TextRun({ text: line, size: 22 })],
+          spacing: { before: 60, after: 120, line: 260 },
+        })
       );
     return [titlePara, ...paras];
   }
 
-  if (section.type === "image" && section.image) {
-    try {
-      const imgData = imageToUint8Array(section.image);
-
-      const colWidth = (section.layout?.w || 6) / 12;
-      const pageWidth = 900; // approx usable width in px
-
-      const imgWidth = Math.round(pageWidth * colWidth);
-      const imgHeight = Math.round(imgWidth * 0.6);
-      return [
-        titlePara,
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 120, after: 180 },
-          children: [
-            new ImageRun({
-              data: imgData,
-              transformation: { width: imgWidth, height: imgHeight },
-            }),
-          ],
-        }),
-      ];
-    } catch (e) {
-      console.error("Image failed", e);
-      return [titlePara, new Paragraph({ children: [new TextRun({ text: "Image failed to load", color: "ef4444" })] })];
-    }
-  }
   if (section.type === "table") {
-    // ... your existing table rendering logic (it's mostly fine)
-    // Just make sure borders are clean
-    const cols = section.columns || ["Sr No", "Column 1", "Column 2", "Column 3"];
+    const cols = section.columns || [];
     const rows = section.rows || [];
 
     const headerRow = new TableRow({
@@ -275,6 +206,7 @@ const renderComponent = (section) => {
         })
       ),
     });
+
     const dataRows = rows.map((r, i) =>
       new TableRow({
         children: cols.map((col) =>
@@ -282,11 +214,7 @@ const renderComponent = (section) => {
             borders: { all: { style: BorderStyle.SINGLE, size: 6, color: "cbd5e1" } },
             shading: { fill: i % 2 === 0 ? "ffffff" : "f8fafc" },
             padding: { top: 100, bottom: 100, left: 100, right: 100 },
-            children: [
-              new Paragraph({
-                children: [new TextRun({ text: safe(r[col]) || "", size: 21 })],
-              }),
-            ],
+            children: [new Paragraph({ children: [new TextRun({ text: safe(r[col]) || "", size: 21 })] })],
           })
         ),
       })
@@ -296,7 +224,7 @@ const renderComponent = (section) => {
       titlePara,
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: { all: { style: BorderStyle.SINGLE, size: 10, color: "94a3b8" } }, // clean outer border
+        borders: { all: { style: BorderStyle.SINGLE, size: 10, color: "94a3b8" } },
         rows: [headerRow, ...dataRows],
       }),
     ];
@@ -308,14 +236,16 @@ const renderComponent = (section) => {
       width: { size: 100, type: WidthType.PERCENTAGE },
       borders: { all: { style: BorderStyle.NIL } },
       rows: [new TableRow({
-        children: fields.map(f => new TableCell({
-          borders: { bottom: { style: BorderStyle.SINGLE, size: 12, color: "475569" } },
-          padding: { top: 160, bottom: 100, left: 60, right: 60 },
-          children: [
-            new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: safe(f.value) || " ", size: 24 })] }),
-            new Paragraph({ children: [new TextRun({ text: safe(f.label).toUpperCase(), size: 18, bold: true })] }),
-          ],
-        })),
+        children: fields.map((f) =>
+          new TableCell({
+            borders: { bottom: { style: BorderStyle.SINGLE, size: 12, color: "475569" } },
+            padding: { top: 160, bottom: 100, left: 60, right: 60 },
+            children: [
+              new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: safe(f.value) || " ", size: 24 })] }),
+              new Paragraph({ children: [new TextRun({ text: safe(f.label).toUpperCase(), size: 18, bold: true })] }),
+            ],
+          })
+        ),
       })],
     })];
   }
@@ -324,21 +254,22 @@ const renderComponent = (section) => {
 };
 
 /* ====================== MAIN GENERATE FUNCTION ====================== */
-// Replace your entire generateDoc function with this improved version
-
 export const generateDoc = async (schema) => {
   const { meta, sections } = schema;
+
+  const tocSection = sections.find((section) => section.id === "toc");
+  const tocText = safe(tocSection?.content || "");
+  const tocChildren = renderManualTOC(tocText);
+
   const uploadedLogoData = meta?.logo ? imageToUint8Array(meta.logo) : null;
-  const coverLogoData =
-    uploadedLogoData && uploadedLogoData.length > 0
-      ? uploadedLogoData
-      : await loadDefaultCoverLogo();
+  const coverLogoData = uploadedLogoData && uploadedLogoData.length > 0
+    ? uploadedLogoData
+    : await loadDefaultCoverLogo();
 
-  // Sort sections by Y position (top to bottom)
-  const sortedSections = [...sections].sort((a, b) =>
-    (a.layout?.y || 0) - (b.layout?.y || 0)
-  );
-
+  // Build main body content (your existing loop)
+  const sortedSections = sections
+    .filter((section) => section.id !== "toc")
+    .sort((a, b) => (a.layout?.y || 0) - (b.layout?.y || 0));
   const bodyChildren = [];
 
   let i = 0;
@@ -346,99 +277,82 @@ export const generateDoc = async (schema) => {
     const currentY = sortedSections[i].layout?.y || 0;
     const rowSections = [];
 
-    // Collect all sections on the same "row" (same or very close Y)
     while (i < sortedSections.length && Math.abs((sortedSections[i].layout?.y || 0) - currentY) < 2) {
       rowSections.push(sortedSections[i]);
       i++;
     }
-    const maxH = Math.max(...rowSections.map((s) => s.layout?.h || 6));
 
     if (rowSections.length === 1) {
-      // Single section - full width
       const section = rowSections[0];
       bodyChildren.push(...renderComponent(section));
       bodyChildren.push(new Paragraph({ spacing: { after: 240 } }));
-    }
-    else {
-      // Multiple sections side-by-side → use Table for row
+    } else {
+      // your multi-column logic here (keep as is)
       rowSections.sort((a, b) => (a.layout?.x || 0) - (b.layout?.x || 0));
-
-      const cells = [];
-
-      rowSections.forEach((section) => {
+      const cells = rowSections.map(section => {
         const widthPercent = Math.round(((section.layout?.w || 6) / 12) * 100);
-
-        cells.push(
-          new TableCell({
-            width: { size: widthPercent, type: WidthType.PERCENTAGE },
-            borders: { all: { style: BorderStyle.NIL } },   // <--- Clean: No ugly borders
-            padding: { top: 120, bottom: 120, left: 80, right: 80 },
-            children: renderComponent(section),
-          })
-        );
+        return new TableCell({
+          width: { size: widthPercent, type: WidthType.PERCENTAGE },
+          borders: { all: { style: BorderStyle.NIL } },
+          padding: { top: 120, bottom: 120, left: 80, right: 80 },
+          children: renderComponent(section),
+        });
       });
 
-      // Add empty cell if total width < 12
-      const totalW = rowSections.reduce((sum, s) => sum + (s.layout?.w || 6), 0);
-      if (totalW < 12) {
-        cells.push(
-          new TableCell({
-            width: { size: Math.round(((12 - totalW) / 12) * 100), type: WidthType.PERCENTAGE },
-            borders: { all: { style: BorderStyle.NIL } },
-            children: [new Paragraph("")],
-          })
-        );
-      }
-
-      bodyChildren.push(
-        new Table({
-          width: { size: 100, type: WidthType.PERCENTAGE },
-          borders: { all: { style: BorderStyle.NIL } },   // No outer border mess
-          rows: [
-            new TableRow({
-              children: cells,
-              height: { value: maxH * 300, rule: "atLeast" },
-            }),
-          ],
-        })
-      );
-
+      bodyChildren.push(new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: { all: { style: BorderStyle.NIL } },
+        rows: [new TableRow({ children: cells })],
+      }));
       bodyChildren.push(new Paragraph({ spacing: { after: 180 } }));
     }
   }
 
   const doc = new Document({
     sections: [
+      // 1. COVER PAGE - No header, No border
+      {
+        properties: {
+          page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } },
+        },
+        children: renderFirstPage({ ...meta, coverLogoData }),
+      },
+
+      // 2. TOC PAGE - Uses NEW TOC Header + Border
       {
         properties: {
           page: {
             margin: { top: 720, right: 720, bottom: 720, left: 720 },
-            size: { width: 11906, height: 16838 }, // A4
-            borders: {
-              pageBorders: {
-                display: PageBorderDisplay.FIRST_PAGE,
-                offsetFrom: PageBorderOffsetFrom.TEXT,
-                zOrder: PageBorderZOrder.BACK,
-              },
-              pageBorderTop: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
-              pageBorderRight: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            borders: meta.hasBorder ? {
+              pageBorderTop:    { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderRight:  { style: BorderStyle.SINGLE, size: 12, color: "000000" },
               pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
-              pageBorderLeft: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
-            },
+              pageBorderLeft:   { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            } : undefined,
           },
         },
-        children: renderFirstPage({ ...meta, coverLogoData }),
+        headers: {
+          default: new Header({ children: [renderTOCHeader(meta)] }),   // ← Different Header for TOC
+        },
+        children: tocChildren,
       },
-      {
-        properties: {},
-        headers: { default: new Header({ children: [renderHeader(meta)] }) },
-        children: renderTOC(),
-      },
+
+      // 3. MAIN CONTENT PAGES - Uses Normal Header + Page Numbering
       {
         properties: {
-          page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } }
+          page: {
+            margin: { top: 720, right: 720, bottom: 720, left: 720 },
+            borders: meta.hasBorder ? {
+              pageBorderTop:    { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderRight:  { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderBottom: { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+              pageBorderLeft:   { style: BorderStyle.SINGLE, size: 12, color: "000000" },
+            } : undefined,
+          },
         },
-        headers: { default: new Header({ children: [renderHeader(meta)] }) },
+        headers: {
+          default: new Header({ children: [renderHeader(meta)] }),     // ← Normal Header
+        },
         footers: {
           default: new Footer({
             children: [
