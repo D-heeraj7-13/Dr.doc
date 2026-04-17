@@ -46,7 +46,13 @@ export default function DynamicForm({ section, index, updateSection, removeSecti
         <input className="font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tight bg-transparent border-none outline-none mb-2" value={section.title} onChange={(e) => updateSection(index, { ...section, title: e.target.value })} />
 
         {section.type === "text" && (
-          <textarea className="flex-1 w-full p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-xl outline-none resize-none text-sm" placeholder="Content..." value={section.content} onChange={(e) => updateSection(index, { ...section, content: e.target.value })} />
+          <textarea
+            className="w-full p-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 rounded-xl outline-none resize-none text-sm scrollbar-none"
+            placeholder="Content..."
+            rows={8}
+            value={section.content || ""}
+            onChange={(e) => updateSection(index, { ...section, content: e.target.value })}
+          />
         )}
 
         {section.type === "table" && (
