@@ -175,12 +175,12 @@ export default function SignoffPage() {
     <div className="max-w-7xl mx-flex p-8 space-y-10">
       <header className="flex justify-between">
         <h1 className="text-3xl font-bold">Signoff Generator</h1>
-        <button onClick={handleDownload} className="btn-primary">
+        <button onClick={handleDownload} className="btn-primary bg-blue-600 hover:bg-blue-700 text-white">
           Generate Doc
         </button>
       </header>
 
-      <button onClick={addSection} className="btn-outline">
+      <button onClick={addSection} className="btn-outline bg-blue-600 hover:bg-blue-700 text-white">
         + Add Section
       </button>
 
