@@ -175,12 +175,7 @@ export default function SignoffPage() {
     <div className="max-w-7xl mx-flex p-8 space-y-10">
       <header className="flex justify-between">
         <h1 className="text-3xl font-bold">Signoff Generator</h1>
-        <button
-          onClick={handleDownload}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
-        >
-          Generate Doc
-        </button>
+        
       </header>
 
       <button
@@ -188,7 +183,13 @@ export default function SignoffPage() {
         className="w-fit bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-bold shadow-md shadow-blue-500/25 transition-all hover:scale-105 active:scale-95"
       >
         + Add Section
-      </button>
+      </button> <></>
+      <button
+          onClick={handleDownload}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95"
+        >
+          Generate Doc
+        </button>
 
       <GridLayout
         layouts={{

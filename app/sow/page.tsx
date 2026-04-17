@@ -231,7 +231,7 @@ export default function SowPage() {
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-4 gap-8 p-6 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-inner">
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Company Logo</label>
           <input
             type="file"
@@ -239,7 +239,7 @@ export default function SowPage() {
             onChange={handleLogoUpload}
             className="w-full text-xs text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700"
           />
-        </div>
+        </div> */}
         <div className="space-y-2">
           <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Customer Name</label>
           <input
