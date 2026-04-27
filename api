@@ -1,0 +1,178 @@
+import requests
+import json
+import time
+import re
+from datetime import datetime, timezone, timedelta
+from html import unescape
+
+# ─── CONFIG ─────────────────────────────────────────────
+ 
+BASE_URL = "https://api.worldnewsapi.com/search-news"
+
+MAX_PER_REQUEST = 100          # WorldNewsAPI default max is 100
+TOTAL_RESULTS_REQUIRED = 500   # adjust as needed (API has quotas)
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+# ─── FETCH MODE ─────────────────────────────────────────
+FETCH_MODE = "today"           # "today" or "last_n_days"
+LAST_N_DAYS = 7                # only used if FETCH_MODE == "last_n_days"
+
+# ─── KEYWORD GROUPS (same as yours) ─────────────────────
+KEYWORD_GROUPS = {
+    "Geojit": ["Geojit", "Geojit Financial Services", "जियोजित"],
+    "Zerodha": ["Zerodha", "ज़ेरोधा"],
+    "Angel One": ["Angel One", "Angel Broking"],
+    "Groww": ["Groww"],
+    "Kotak Securities": ["Kotak Securities", "कोटक सिक्योरिटीज"],
+    "ICICI Securities": ["ICICI Securities", "आईसीआईसीआई सिक्योरिटीज"],
+    "Motilal Oswal": ["Motilal Oswal", "मोतीलाल ओसवाल"]
+}
+
+# ─── HELPERS ────────────────────────────────────────────
+def get_time_range():
+    now_utc = datetime.now(timezone.utc)
+    if FETCH_MODE == "today":
+        # Start of today in IST → converted to UTC
+        now_ist = now_utc + IST.utcoffset(None)
+        today_start_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+        since_utc = today_start_ist - IST.utcoffset(None)
+    else:
+        since_utc = now_utc - timedelta(days=LAST_N_DAYS)
+    
+    return since_utc, now_utc
+
+def to_ist(dt_str):
+    try:
+        # WorldNewsAPI returns ISO format like "2026-04-27T10:15:00Z" or without Z
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        return (dt + IST.utcoffset(None)).strftime("%Y-%m-%d %H:%M IST")
+    except Exception:
+        return "Unknown date"
+
+def clean_html(text):
+    if not text:
+        return ""
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = unescape(text)
+    return re.sub(r"\s+", " ", text).strip()
+
+def get_matched_keywords(title, body, keywords):
+    combined = f"{title} {body}".lower()
+    return [kw for kw in keywords if kw.lower() in combined]
+
+def get_sentiment(text):
+    pos = ["gain", "rise", "up", "positive", "growth", "profit", "bullish"]
+    neg = ["loss", "fall", "down", "negative", "decline", "weak", "bearish"]
+    text = text.lower()
+    score = sum(w in text for w in pos) - sum(w in text for w in neg)
+    if score > 0: return "positive"
+    elif score < 0: return "negative"
+    return "neutral"
+
+def build_query(keywords):
+    """Exact phrase match with OR"""
+    return " OR ".join(f'"{k}"' for k in keywords)
+0aec9219682d4014bcfd79263e5407b5 
+# ─── FORMAT ARTICLE (similar to your original) ───────────
+def format_article(article, brand, keywords):
+    title = clean_html(article.get("title", ""))
+    body = clean_html(article.get("text", "") or article.get("summary", ""))
+    summary = clean_html(article.get("summary", "")) or body[:300]
+
+    full_text = f"{title} {summary} {body}"
+
+    return {
+        "title": title,
+        "summary": summary,
+        "body": body[:800],                     # truncate if too long
+        "matched_keywords": get_matched_keywords(title, body, keywords),
+        "author": article.get("author") or "Unknown",
+        "source": article.get("source") or "Unknown",
+        "sentiment": get_sentiment(full_text),
+        "published_at_ist": to_ist(article.get("publish_date", "")),
+        "url": article.get("url"),
+        "brand": brand,
+        "article_id": article.get("id"),        # WorldNewsAPI uses "id"
+        "timestamp_utc": article.get("publish_date"),
+        "language_code": article.get("language"),
+        "images": article.get("images", []),
+        "category": article.get("category"),
+        # Add more fields if you need them (entities, sentiment score, etc.)
+    }
+
+# ─── FETCH FUNCTION ─────────────────────────────────────
+def fetch_news(brand, keywords, total_results=500):
+    results = []
+    since_utc, until_utc = get_time_range()
+
+    params_base = {
+        "text": build_query(keywords),
+        "title": build_query(keywords),       # search in both title and body
+        "language": "en",
+        "sort": "publish-time",
+        "sort-direction": "desc",
+        "number": MAX_PER_REQUEST,
+        "earliest-publish-date": since_utc.strftime("%Y-%m-%d %H:%M:%S"),
+        "latest-publish-date": until_utc.strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+    headers = {"x-api-key": API_KEY}
+
+    # WorldNewsAPI doesn't support easy pagination like Twingly.
+    # We do one or two calls with offset if needed.
+    offset = 0
+    while len(results) < total_results:
+        params = params_base.copy()
+        params["offset"] = offset
+        params["number"] = min(MAX_PER_REQUEST, total_results - len(results))
+
+        response = requests.get(BASE_URL, headers=headers, params=params, timeout=15)
+        
+        if response.status_code != 200:
+            print(f"❌ Error for {brand}: {response.status_code} - {response.text}")
+            break
+
+        data = response.json()
+        articles = data.get("news", [])
+
+        if not articles:
+            break
+
+        for a in articles:
+            # Strict filter: must contain at least one keyword
+            title = a.get("title", "") or ""
+            body = a.get("text", "") or ""
+            combined = f"{title} {body}".lower()
+            if any(kw.lower() in combined for kw in keywords):
+                results.append(format_article(a, brand, keywords))
+
+        print(f"{brand}: fetched {len(results)} relevant articles so far")
+
+        offset += MAX_PER_REQUEST
+        if len(articles) < MAX_PER_REQUEST:
+            break  # no more results
+
+        time.sleep(0.3)   # be gentle with rate limits
+
+    return results[:total_results]
+
+# ─── MAIN ───────────────────────────────────────────────
+if __name__ == "__main__":
+    final = {
+        "created_at": datetime.now(IST).strftime("%Y-%m-%d %H:%M IST"),
+        "mode": FETCH_MODE,
+        "articles": []
+    }
+
+    for brand, keywords in KEYWORD_GROUPS.items():
+        print(f"\n🔍 Fetching news for {brand}...")
+        articles = fetch_news(brand, keywords, TOTAL_RESULTS_REQUIRED)
+        final["articles"].extend(articles)
+
+    final["total_articles"] = len(final["articles"])
+
+    with open("final_news.json", "w", encoding="utf-8") as f:
+        json.dump(final, f, indent=4, ensure_ascii=False)
+
+    print(f"\n✅ Done! Total articles saved: {final['total_articles']} → final_news.json")
