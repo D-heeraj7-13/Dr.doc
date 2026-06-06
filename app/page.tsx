@@ -1,7 +1,8 @@
 "use client";
+import cors from "cors"; // Fixed import
 
 import { useState } from "react"; // Fixed import
-import db from "../src/lib/db";
+import db, { remoteDB } from "../src/lib/db";
 
 export default function Home() {
 
@@ -37,6 +38,25 @@ export default function Home() {
     const docs = await db.allDocs({ include_docs: true });
     console.log("All Docs", docs.rows);
   }
+  async function saveToCouchDB() {
+  try {
+    const response = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=19.0760&longitude=72.8777&current_weather=true"
+    );
+
+    const data = await response.json();
+
+    const result = await remoteDB.put({
+      _id: Date.now().toString(),
+      weather: data,
+      createdAt: new Date().toISOString(),
+    });
+
+    console.log("Saved directly to CouchDB", result);
+  } catch (error) {
+    console.error("CouchDB Save Error", error);
+  }
+}
 
   // ✅ Rule 2: ALL HTML rendering must happen inside this return statement
   return (
@@ -55,8 +75,15 @@ export default function Home() {
       </button>
 
       <button onClick={showDocs} style={{ marginLeft: 10 }}>
-        Show Docs
-      </button>
+  Show Docs
+</button>
+
+<button
+  onClick={saveToCouchDB}
+  style={{ marginLeft: 10 }}
+>
+  Save Direct To CouchDB
+</button>
     </div>
   );
 }
