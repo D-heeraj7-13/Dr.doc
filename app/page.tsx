@@ -1,12 +1,15 @@
 "use client";
-import cors from "cors"; // Fixed import
+import {createTestConflict} from "../utils/createConflict"; // Import the function to create conflict
+import cors from "cors"; 
+import { Table } from "antd"; 
 
-import { useState } from "react"; // Fixed import
+import { useState } from "react"; 
 import db, { remoteDB } from "../src/lib/db";
 
 export default function Home() {
 
   const [temperature, setTemperature] = useState(null);
+  const [weatherData, setweatherData] = useState(null);
 
   async function getWeather() {
     try {
@@ -35,9 +38,19 @@ export default function Home() {
   }
 
   async function showDocs() {
-    const docs = await db.allDocs({ include_docs: true });
-    console.log("All Docs", docs.rows);
-  }
+  const docs = await db.allDocs({ include_docs: true });
+
+  console.log("All Docs", docs.rows);
+
+  const tableData = docs.rows.map((row) => ({
+    key: row.id,
+    id: row.id,
+    createdAt: (row.doc as any)?.createdAt,
+    temperature: (row.doc as any)?.weather?.current_weather?.temperature ?? "N/A",
+  }));
+
+  setRecords(tableData);
+}
   async function saveToCouchDB() {
   try {
     const response = await fetch(
@@ -79,11 +92,12 @@ export default function Home() {
 </button>
 
 <button
-  onClick={saveToCouchDB}
+  onClick={createTestConflict}
   style={{ marginLeft: 10 }}
 >
   Save Direct To CouchDB
 </button>
+<Table virtual scroll={{ x: 2000, y: 500 }} {...getWeather} />
     </div>
   );
 }
