@@ -8,8 +8,8 @@ import db, { remoteDB } from "../src/lib/db";
 
 export default function Home() {
 
-  const [temperature, setTemperature] = useState(null);
-  const [weatherData, setweatherData] = useState(null);
+  const [temperature, setTemperature] = useState(null); 
+ const [records, setRecords] = useState<any[]>([]);
 
   async function getWeather() {
     try {
@@ -70,7 +70,23 @@ export default function Home() {
     console.error("CouchDB Save Error", error);
   }
 }
-
+const columns = [
+  {
+    title: "ID",
+    dataIndex: "id",
+    key: "id",
+  },
+  {
+    title: "Created At",
+    dataIndex: "createdAt",
+    key: "createdAt",
+  },
+  {
+    title: "Temperature",
+    dataIndex: "temperature",
+    key: "temperature",
+  },
+];
   // ✅ Rule 2: ALL HTML rendering must happen inside this return statement
   return (
     <div style={{ padding: 20 }}>
@@ -97,7 +113,13 @@ export default function Home() {
 >
   Save Direct To CouchDB
 </button>
-<Table virtual scroll={{ x: 2000, y: 500 }} {...getWeather} />
-    </div>
+<Table
+  columns={columns}
+  dataSource={records}
+  virtual
+  scroll={{ x: 2000, y: 500 }}
+/>    </div>
   );
 }
+
+ 
