@@ -2,7 +2,6 @@
 import {createTestConflict} from "../utils/createConflict"; // Import the function to create conflict
 import cors from "cors"; 
 import { Table } from "antd"; 
-
 import { useState } from "react"; 
 import { Modal } from "antd";
 import db, { remoteDB } from "../src/lib/db";
@@ -180,6 +179,12 @@ const columns = [
 >
   Save Direct To CouchDB
 </button>
+{/* <button
+  onClick={weatherpost}
+  style={{ marginLeft: 10 }}
+>
+  Postgres send 
+</button> */}
 <Table
   columns={columns}
   dataSource={records}
