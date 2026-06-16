@@ -13,6 +13,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const body = await req.json();
+      console.log("BODY", body);
 
   const result = await pool.query(
     `

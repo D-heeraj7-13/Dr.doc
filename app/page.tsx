@@ -40,6 +40,36 @@ const [selectedDoc, setSelectedDoc] = useState<any>(null);
     }
   }
   
+async function weatherPost() {
+  try {
+    const docs = await db.allDocs({
+      include_docs: true,
+    });
+
+    const weatherRows = docs.rows.map((row) => ({
+      createdAt: (row.doc as any)?.createdAt,
+      temperature:
+        (row.doc as any)?.weather?.current_weather
+          ?.temperature,
+    }));
+
+    console.log("Sending", weatherRows);
+
+    for (const row of weatherRows) {
+      await fetch("/api/weatherpost", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(row),
+      });
+    }
+
+    console.log("Sent to PostgreSQL");
+  } catch (error) {
+    console.error(error);
+  }
+}
   function openUpdateModal(record: any) {
   setSelectedDoc(record.doc);
 
@@ -149,7 +179,9 @@ const columns = [
       >
         Delete
       </button>
+      
     </>
+    
   ),
 },
 ];
@@ -179,12 +211,12 @@ const columns = [
 >
   Save Direct To CouchDB
 </button>
-{/* <button
-  onClick={weatherpost}
+<button 
+  onClick={weatherPost}
   style={{ marginLeft: 10 }}
 >
   Postgres send 
-</button> */}
+</button>
 <Table
   columns={columns}
   dataSource={records}
